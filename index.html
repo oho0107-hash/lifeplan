@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ライフプラン・シミュレーター</title>
+<style>
+  :root{
+    --bg:#f1f5f9; --card:#ffffff; --ink:#0f172a; --sub:#64748b; --line:#e2e8f0;
+    --accent:#2563eb; --accent2:#0ea5e9; --good:#16a34a; --warn:#dc2626; --warnbg:#fef2f2;
+    --edu:#f59e0b; --shadow:0 1px 3px rgba(15,23,42,.08),0 1px 2px rgba(15,23,42,.04);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    background:var(--bg); color:var(--ink); font-size:14px; line-height:1.5; -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:12px;}
+  header.app{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; padding:6px 4px 12px;}
+  header.app h1{font-size:18px; margin:0;}
+  header.app .muted{color:var(--sub); font-size:12px;}
+
+  /* tabs */
+  .tabs{display:flex; gap:6px; flex-wrap:wrap; position:sticky; top:0; z-index:20; background:var(--bg); padding:6px 0; border-bottom:1px solid var(--line);}
+  .tab{appearance:none; border:1px solid var(--line); background:#fff; color:var(--ink); padding:8px 14px; border-radius:999px; font-size:13px; cursor:pointer;}
+  .tab.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .subtabs{display:flex; gap:6px; flex-wrap:wrap; margin:10px 0;}
+  .subtab{appearance:none; border:1px solid var(--line); background:#fff; padding:6px 12px; border-radius:8px; font-size:12px; cursor:pointer;}
+  .subtab.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin:12px 0; box-shadow:var(--shadow);}
+  .card > h2{font-size:14px; margin:0 0 12px; color:var(--accent); letter-spacing:.02em;}
+  .card > h2 .hint{color:var(--sub); font-weight:400; font-size:11px; margin-left:6px;}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:10px;}
+  .field{display:flex; flex-direction:column; gap:3px; font-size:12px;}
+  .field .flabel{color:var(--sub); font-size:11px; display:flex; gap:4px; align-items:baseline;}
+  .field .flabel em{font-style:normal; color:#94a3b8;}
+  .field input,.field select{
+    width:100%; padding:8px 9px; border:1px solid var(--line); border-radius:8px; font-size:14px; background:#fff; color:var(--ink);
+  }
+  .field input:focus,.field select:focus{outline:2px solid #bfdbfe; border-color:var(--accent);}
+  .field.check{flex-direction:row; align-items:center; gap:8px; background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:8px 10px;}
+  .field.check input{width:18px; height:18px; flex:none;}
+  .field.check span{font-size:12.5px; color:var(--ink);}
+
+  .childhead{display:flex; align-items:center; justify-content:space-between; gap:8px; margin:-2px 0 10px;}
+  .childhead .nm{font-weight:700; font-size:13px;}
+  .child.disabled{opacity:.45;}
+  .child.disabled .grid{pointer-events:none;}
+
+  .dynrow{display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; padding:8px; border:1px dashed var(--line); border-radius:8px; margin-bottom:8px;}
+  .dynfield{display:flex; flex-direction:column; gap:3px; font-size:11px; color:var(--sub); flex:1; min-width:90px;}
+  .dynfield input{padding:7px 8px; border:1px solid var(--line); border-radius:7px; font-size:14px; width:100%;}
+  .btn-del{border:1px solid #fecaca; background:#fff1f2; color:var(--warn); border-radius:7px; padding:7px 10px; cursor:pointer; font-size:12px; height:36px;}
+  .btn-add{border:1px dashed var(--accent); background:#eff6ff; color:var(--accent); border-radius:8px; padding:8px 12px; cursor:pointer; font-size:12px;}
+
+  .actions{display:flex; gap:10px; flex-wrap:wrap; position:sticky; bottom:0; background:linear-gradient(transparent,var(--bg) 30%); padding:12px 0; z-index:15;}
+  .btn{appearance:none; border:none; border-radius:10px; padding:12px 22px; font-size:15px; font-weight:700; cursor:pointer;}
+  .btn-go{background:var(--accent); color:#fff; flex:1; min-width:160px;}
+  .btn-go:active{transform:translateY(1px);}
+  .btn-reset{background:#fff; border:1px solid var(--line); color:var(--sub);}
+
+  /* summary cards */
+  .sumgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px;}
+  .sum{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; box-shadow:var(--shadow);}
+  .sum .k{font-size:11px; color:var(--sub);}
+  .sum .v{font-size:18px; font-weight:800; margin-top:4px;}
+  .sum .v.neg{color:var(--warn);} .sum .v.pos{color:var(--good);}
+  .sum .u{font-size:11px; color:var(--sub); font-weight:500;}
+
+  .alert{background:var(--warnbg); border:1px solid #fecaca; color:#991b1b; border-radius:10px; padding:12px 14px; margin:12px 0; font-size:13px;}
+  .ok{background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; border-radius:10px; padding:10px 14px; margin:12px 0; font-size:13px;}
+
+  /* tables */
+  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; -webkit-overflow-scrolling:touch;}
+  table{border-collapse:collapse; width:100%; font-size:12px; white-space:nowrap;}
+  th,td{padding:6px 9px; border-bottom:1px solid var(--line); text-align:right;}
+  th{background:#f8fafc; color:var(--sub); font-weight:600; position:sticky; top:0;}
+  td.lbl,th.lbl{text-align:center;}
+  tbody tr:nth-child(even){background:#fbfdff;}
+  .sticky-col{position:sticky; left:0; background:#fff; z-index:2; text-align:center; font-weight:700; box-shadow:1px 0 0 var(--line);}
+  tbody tr:nth-child(even) .sticky-col{background:#fbfdff;}
+  th.sticky-col{background:#f8fafc; z-index:5;}
+  tr.depleted td{background:#fff1f2 !important;}
+  .neg{color:var(--warn);}
+
+  /* charts */
+  .chartbox{position:relative;}
+  .chartbox svg{display:block; width:100%; height:auto;}
+  .chart-title{font-size:13px; font-weight:700; margin:4px 2px 8px;}
+  .tip{position:absolute; pointer-events:none; background:var(--ink); color:#fff; font-size:11px; padding:6px 8px; border-radius:6px; transform:translate(-50%,-115%); white-space:nowrap; opacity:0; transition:opacity .08s; z-index:5;}
+  .tip b{font-weight:700;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:var(--sub); margin:6px 2px;}
+  .legend i{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:-1px;}
+
+  .note{font-size:11px; color:var(--sub); margin-top:8px;}
+  .locked-input{background:#f0f9ff !important; color:#0369a1 !important; border-color:#bae6fd !important; cursor:not-allowed;}
+  .lock-badge{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:600;color:#0369a1;background:#e0f2fe;border:1px solid #bae6fd;border-radius:4px;padding:0 5px;line-height:16px;}
+  .lock-badge::before{content:'🔒';font-size:9px;}
+  @media (max-width:520px){
+    .wrap{padding:8px;}
+    .grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}
+    header.app h1{font-size:16px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <h1>ライフプラン・シミュレーター</h1>
+    <span class="muted">世帯主90歳までの年次キャッシュフロー試算（完全オフライン・自動保存）</span>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="input">入力</button>
+    <button class="tab" data-tab="result">結果</button>
+  </div>
+
+  <!-- ============ INPUT VIEW ============ -->
+  <div id="inputView" class="view active">
+    <div id="formHost"></div>
+
+    <!-- children -->
+    <div class="card">
+      <h2>教育の選択（子ごと）<span class="hint">長男〜三男は固定。第4子のみ任意</span></h2>
+      <div id="childHost"></div>
+    </div>
+
+    <!-- mortgage extras -->
+    <div class="card">
+      <h2>住宅ローン：金利の将来変更<span class="hint">最大何件でも。指定年月以降に適用</span></h2>
+      <div id="rateHost"></div>
+      <button type="button" class="btn-add" id="addRate">＋ 金利変更を追加</button>
+    </div>
+    <div class="card">
+      <h2>住宅ローン：繰上返済</h2>
+      <div class="grid" id="recurHost"></div>
+      <div style="margin-top:12px"></div>
+      <div class="flabel" style="color:var(--sub);font-size:11px;margin-bottom:6px;">一括繰上（年・月・金額）</div>
+      <div id="lumpHost"></div>
+      <button type="button" class="btn-add" id="addLump">＋ 一括繰上を追加</button>
+    </div>
+
+    <!-- extra income -->
+    <div class="card">
+      <h2>臨時収入<span class="hint">指定年に加算</span></h2>
+      <div id="extraHost"></div>
+      <button type="button" class="btn-add" id="addExtra">＋ 臨時収入を追加</button>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-go" id="calcBtn">計算する ▶</button>
+      <button class="btn btn-reset" id="resetBtn">既定値に戻す</button>
+    </div>
+  </div>
+
+  <!-- ============ RESULT VIEW ============ -->
+  <div id="resultView" class="view">
+    <div id="summaryHost"></div>
+    <div id="alertHost"></div>
+
+    <div class="subtabs">
+      <button class="subtab active" data-sub="charts">グラフ</button>
+      <button class="subtab" data-sub="cf">キャッシュフロー表</button>
+      <button class="subtab" data-sub="edu">教育費サマリ</button>
+      <button class="subtab" data-sub="loan">住宅ローン明細</button>
+    </div>
+
+    <div id="sub-charts" class="subview">
+      <div class="card">
+        <div class="chart-title">合計資産の推移</div>
+        <div class="legend"><span><i style="background:#2563eb"></i>合計資産</span><span><i style="background:#94a3b8"></i>うち投資残高</span></div>
+        <div class="chartbox" id="assetChart"></div>
+      </div>
+      <div class="card">
+        <div class="chart-title">年次教育費</div>
+        <div class="chartbox" id="eduChart"></div>
+      </div>
+    </div>
+
+    <div id="sub-cf" class="subview" style="display:none">
+      <div class="card"><h2>年次キャッシュフロー</h2><div class="tablewrap" id="cfTable"></div>
+      <div class="note">子の表示は「○歳(学年)」。学年は4月始まり・1〜3月生まれは前年度扱いで判定。金額は円。</div></div>
+    </div>
+
+    <div id="sub-edu" class="subview" style="display:none">
+      <div class="card"><h2>教育費 年次サマリ</h2><div class="tablewrap" id="eduTable"></div>
+      <div class="note">実質教育費 = max(0, 学費 − 補助金) + 習い事。子ごとの実質額と合計。</div></div>
+    </div>
+
+    <div id="sub-loan" class="subview" style="display:none">
+      <div class="card"><h2>住宅ローン 年次明細</h2><div class="tablewrap" id="loanTable"></div>
+      <div class="note">月次エンジンで計算。5年ごとに残存期間で返済額を見直し（直前の1.25倍を上限）。</div></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-go" id="backBtn" style="background:#fff;border:1px solid var(--line);color:var(--accent)">◀ 入力に戻る</button>
+    </div>
+  </div>
+
+  <footer style="text-align:center;color:var(--sub);font-size:11px;padding:18px 0;">
+    入力はこのブラウザ内（localStorage）に自動保存されます。金額定数はソース冒頭の <code>C</code> で調整可能。
+  </footer>
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   1. 金額定数（すべてここに集約。後から調整しやすい） 単位:円 / 年額
+   ========================================================================= */
+const C = {
+  // 学費マスタ（年額）
+  EDU: {
+    pre35_youchien: 240000,   // 3-5歳 幼稚園（保育園は0：幼児教育無償化前提）
+    elementary:     100000,   // 小学校（公立想定）
+    juniorPublic:   500000,   // 中学 公立
+    juniorPrivate: 1200000,   // 中学 私立
+    highPublic:     600000,   // 高校 公立
+    highPrivate:   1000000,   // 高校 私立
+    uniNationalH:   600000,   // 大学 国立文
+    uniNationalS:   650000,   // 大学 国立理
+    uniPrivateH:   1000000,   // 大学 私立文
+    uniPrivateS:   1300000,   // 大学 私立理
+  },
+  // 習い事（年額・レベル別上乗せ）
+  LESSON: {
+    pre35:      { low:0,      normal:120000, high:360000  },
+    elementary: { low:60000,  normal:240000, high:480000  },
+    junior:     { low:120000, normal:360000, high:840000  },
+    high:       { low:120000, normal:480000, high:1000000 },
+  },
+  // 補助金（学費から控除・マイナスにしない）
+  SUBSIDY: {
+    highPublic:      118800,  // 高校無償化 公立
+    highPrivate:     457000,  // 高校無償化 私立
+    uniMultiNational:535800,  // 大学無償化(多子) 国公立
+    uniMultiPrivate: 700000,  // 大学無償化(多子) 私立
+  },
+  // 児童手当（2024年10月改正準拠・所得制限なし）月額
+  ALLOWANCE: { third:30000, under3:15000, normal:10000 },
+  PENSION_DEFAULT: 3600000,
+};
+
+/* =========================================================================
+   2. 既定値（安全な初期入力）
+   ========================================================================= */
+const DEFAULTS = {
+  husband:{ dob:{y:1996,m:1}, monthly:350000, bonus:1000000, raise:2, peakAge:50, retireAge:60, retireLump:15000000, pensionStart:65, pensionAmt:3600000 },
+  wife:   { dob:{y:1994,m:7}, monthly:150000, bonus:300000,  raise:1, peakAge:50, retireAge:60, retireLump:5000000,  pensionStart:65, pensionAmt:1560000 },
+  children:[
+    { enabled:true,  dob:{y:2023,m:1}, cap02:40000, pre35:'hoikuen', junior:'public', high:'public', uni:'nationalH', uniHousing:'home', lesson:'normal', allowance:true, highFree:true, uniFree:true },
+    { enabled:true,  dob:{y:2024,m:3}, cap02:40000, pre35:'hoikuen', junior:'public', high:'public', uni:'privateH',  uniHousing:'home', lesson:'normal', allowance:true, highFree:true, uniFree:true },
+    { enabled:true,  dob:{y:2026,m:5}, cap02:40000, pre35:'hoikuen', junior:'public', high:'public', uni:'privateH',  uniHousing:'home', lesson:'normal', allowance:true, highFree:true, uniFree:true },
+    { enabled:false, dob:{y:2029,m:1}, cap02:40000, pre35:'hoikuen', junior:'public', high:'public', uni:'privateH',  uniHousing:'home', lesson:'normal', allowance:true, highFree:true, uniFree:false },
+  ],
+  assets:{ cash:5000000, invest:3000000, contribution:600000, return:4 },
+  living:{ base:3000000, rate:1, reduceHome:15000, reduceAlone:40000 },
+  travel:300000,
+  repair:{ has:true, year:2035, amount:1500000 },
+  appliance:{ cycle:10, amount:300000 },
+  car:{ has:true, cycle:8, price:2500000 },
+  loan:{ principal:35000000, start:{y:2018,m:4}, rate:1.0, termYears:35, bonus:0,
+         recurPrepay:{ amount:0, month:12, startYear:2026, endYear:2030 } },
+  rateChanges:[],            // [{year,month,rate}]
+  lumpPrepays:[],            // [{year,month,amount}]
+  extraIncome:[],            // [{year,amount}]
+  uniAloneExtra:1500000,     // 大学一人暮らしの下宿生活費上乗せ（870000まで下げ可）
+  options:{ inflateFixed:false, inflRate:1 },
+  medical:{ has:false, startAge:75, amount:300000 },
+};
+
+/* =========================================================================
+   3. ユーティリティ
+   ========================================================================= */
+const clone = o => JSON.parse(JSON.stringify(o));
+const num = v => { const n = Number(String(v).replace(/,/g,'')); return isFinite(n) ? n : 0; };
+const fmt = v => { const r = Math.round(v); return (r<0?'-':'') + Math.abs(r).toLocaleString('ja-JP'); };
+/* 入力欄の初期表示用（0は空欄、それ以外はカンマ付き） */
+const fmtInput = v => { const n=num(v); return n?n.toLocaleString('ja-JP'):''; };
+const man = v => Math.round(v/10000).toLocaleString('ja-JP');
+const pad2 = m => String(m).padStart(2,'0');
+const monthToStr = d => (d && d.y) ? `${d.y}-${pad2(d.m||1)}` : '';
+const strToMonth = s => { if(!s) return {y:0,m:1}; const [y,m]=s.split('-').map(Number); return {y:y||0, m:m||1}; };
+
+function getPath(obj, path){ return path.split('.').reduce((o,k)=> (o==null?undefined:o[k]), obj); }
+function setPath(obj, path, val){
+  const ks=path.split('.'); let o=obj;
+  for(let i=0;i<ks.length-1;i++) o=o[ks[i]];
+  o[ks[ks.length-1]]=val;
+}
+
+/* 学齢（年度・4月始まり、1〜3月生まれは前年度扱い） nensū N */
+function fiscalBirthYear(y,m){ return m>=4 ? y : y-1; }
+function nensu(simYear, dob){ return simYear - fiscalBirthYear(dob.y, dob.m); }
+/* N → 学校区分 */
+/* N = simYear − FBY（年度出生年）で「その年度が何年度目か」を表す。
+   N=0: 出生年度、N=1: 0歳児クラス(1歳向け)、…、N=3: 2歳児クラス、
+   N=4: 年少、…、N=6: 年長、N=7: 小1、…、N=18: 高3、N=19: 大1、…、N=22: 大4 */
+function stageOf(N){
+  if(N<0)  return 'unborn';
+  if(N===0)return 'newborn';   // 出生年度（無償化対象外・費用0）
+  if(N<=3) return 'nursery';   // 0-2歳児クラス（N=1,2,3）
+  if(N<=6) return 'pre35';     // 年少・年中・年長（N=4,5,6）
+  if(N<=12)return 'elem';      // 小1〜小6（N=7〜12）
+  if(N<=15)return 'junior';    // 中1〜中3（N=13〜15）
+  if(N<=18)return 'high';      // 高1〜高3（N=16〜18）
+  if(N<=22)return 'univ';      // 大1〜大4（N=19〜22）
+  return 'grad';
+}
+function gradeLabel(N){
+  if(N<0) return '—';
+  if(N<=6)  return '幼保';
+  if(N<=12) return '小'+(N-6);
+  if(N<=15) return '中'+(N-12);
+  if(N<=18) return '高'+(N-15);
+  if(N<=22) return '大'+(N-18);
+  return '卒';
+}
+
+/* =========================================================================
+   4. 計算ロジック（純粋関数：UIに非依存）
+   ========================================================================= */
+
+/* 教育費＋児童手当（その年・全子合算） */
+function educationForYear(enabled, year, uniAloneExtra){
+  // 大学無償化(多子)：その年に22歳以下の子（univ以下）が3人以上
+  const cnt21 = enabled.filter(c=>{ const N=nensu(year,c.dob); return N>=0 && N<=22; }).length;
+  const multi = cnt21>=3;
+  let total=0, allowance=0; const perChild=[];
+  enabled.forEach((c, idx)=>{
+    const N = nensu(year, c.dob);
+    const st = stageOf(N);
+    let tuition=0, lesson=0, subsidy=0;
+    if(st==='nursery'){
+      const cap = num(c.cap02);
+      tuition = idx===0 ? cap*12 : (idx===1 ? (cap/2)*12 : 0);
+    } else if(st==='pre35'){
+      tuition = c.pre35==='youchien' ? C.EDU.pre35_youchien : 0;
+      lesson  = C.LESSON.pre35[c.lesson]||0;
+    } else if(st==='elem'){
+      tuition = C.EDU.elementary;
+      lesson  = C.LESSON.elementary[c.lesson]||0;
+    } else if(st==='junior'){
+      tuition = c.junior==='private' ? C.EDU.juniorPrivate : C.EDU.juniorPublic;
+      lesson  = C.LESSON.junior[c.lesson]||0;
+    } else if(st==='high'){
+      tuition = c.high==='private' ? C.EDU.highPrivate : C.EDU.highPublic;
+      lesson  = C.LESSON.high[c.lesson]||0;
+      if(c.highFree) subsidy = c.high==='private' ? C.SUBSIDY.highPrivate : C.SUBSIDY.highPublic;
+    } else if(st==='univ'){
+      const map={ nationalH:C.EDU.uniNationalH, nationalS:C.EDU.uniNationalS, privateH:C.EDU.uniPrivateH, privateS:C.EDU.uniPrivateS };
+      tuition = map[c.uni]||0;
+      if(c.uniHousing==='alone') tuition += num(uniAloneExtra);
+      if(c.uniFree && multi) subsidy = (c.uni==='nationalH'||c.uni==='nationalS') ? C.SUBSIDY.uniMultiNational : C.SUBSIDY.uniMultiPrivate;
+    }
+    const net = Math.max(0, tuition - subsidy) + lesson;
+    perChild.push(net);
+    total += net;
+    // 児童手当：出生〜18歳到達年度末まで（高3=N18、N<=18まで受給）
+    if(c.allowance && N>=0 && N<=18){
+      let mo;
+      if(idx>=2) mo = C.ALLOWANCE.third;       // 第3子以降
+      else if(N<=3) mo = C.ALLOWANCE.under3;   // 3歳未満（N=1,2,3 = 0-2歳児クラス）
+      else mo = C.ALLOWANCE.normal;
+      allowance += mo*12;
+    }
+  });
+  return { total, perChild, allowance };
+}
+
+/* 住宅ローン 月次エンジン → 年次明細 map */
+function runMortgage(loan, rateChanges, lumpPrepays, husbandBY){
+  const map = {};
+  const principal = num(loan.principal);
+  if(principal<=0) return map;
+  const termMonths = (num(loan.termYears)||35)*12;
+  const startY = loan.start.y, startM = loan.start.m;
+  const bonus = num(loan.bonus);
+  const recur = loan.recurPrepay||{};
+  const changes = (rateChanges||[]).filter(c=>c && c.rate!=='' && c.rate!=null && c.year)
+                   .map(c=>({year:num(c.year),month:num(c.month)||1,rate:num(c.rate)}))
+                   .sort((a,b)=>(a.year-b.year)||(a.month-b.month));
+  const lumps = (lumpPrepays||[]).filter(l=>l && num(l.amount)>0 && num(l.year))
+                   .map(l=>({year:num(l.year),month:num(l.month)||1,amount:num(l.amount)}));
+  const rateAt=(y,mo)=>{ let r=num(loan.rate); for(const c of changes){ if(y>c.year || (y===c.year && mo>=c.month)) r=c.rate; } return r; };
+  const annuity=(bal,annualRate,n)=>{ if(n<=0) return bal; const i=annualRate/100/12; if(i===0) return bal/n; const p=Math.pow(1+i,n); return bal*i*p/(p-1); };
+
+  let balance=principal;
+  let payment=annuity(balance, num(loan.rate), termMonths);
+  let monthCount=0, y=startY, mo=startM;
+  const ensure=yr=>{ if(!map[yr]) map[yr]={begin:null,standard:0,prepay:0,interest:0,end:0,rate:num(loan.rate)}; };
+
+  while(balance>0.5 && monthCount<termMonths){
+    ensure(y);
+    if(map[y].begin===null) map[y].begin=balance;
+    const r=rateAt(y,mo);
+    const interest=balance*(r/100/12);
+    let pay=payment + ((mo===6||mo===12)?bonus:0);
+    let principalPaid=pay-interest;
+    if(principalPaid>=balance){ principalPaid=balance; pay=balance+interest; }
+    balance-=principalPaid;
+    map[y].standard+=pay; map[y].interest+=interest; map[y].rate=r;
+    monthCount++;
+    // 繰上（定例）
+    if(num(recur.amount)>0 && mo===num(recur.month) && y>=num(recur.startYear) && y<=num(recur.endYear)){
+      const pp=Math.min(num(recur.amount),balance); balance-=pp; map[y].prepay+=pp;
+    }
+    // 繰上（一括）
+    for(const lp of lumps){ if(y===lp.year && mo===lp.month){ const pp=Math.min(lp.amount,balance); balance-=pp; map[y].prepay+=pp; } }
+    map[y].end=balance;
+    // 5年ごと見直し（残存期間で再計算・直前×1.25倍上限）
+    if(monthCount%60===0 && balance>0.5){
+      const remaining=termMonths-monthCount;
+      if(remaining>0){ const np=annuity(balance, rateAt(y,mo), remaining); payment=Math.min(np, payment*1.25); }
+    }
+    mo++; if(mo>12){ mo=1; y++; }
+  }
+  return map;
+}
+
+/* 収入コンポーネント（給与は age0=開始年の年齢を基準に複利増/減衰） */
+function personComponents(p, age, age0){
+  const base=num(p.monthly)*12 + num(p.bonus);
+  const r=num(p.raise)/100;
+  let salary=0;
+  if(age<=num(p.retireAge)){
+    let factor;
+    if(age0>=num(p.peakAge)) factor=Math.pow(1-r, age-age0);
+    else if(age<=num(p.peakAge)) factor=Math.pow(1+r, age-age0);
+    else factor=Math.pow(1+r, num(p.peakAge)-age0)*Math.pow(1-r, age-num(p.peakAge));
+    salary=base*Math.max(0,factor);
+  }
+  const lump=(age===num(p.retireAge))?num(p.retireLump):0;
+  const pension=(num(p.pensionAmt)>0 && age>=num(p.pensionStart))?num(p.pensionAmt):0;
+  return {salary,lump,pension};
+}
+
+/* メイン・シミュレーション */
+function simulate(s){
+  const startYear=new Date().getFullYear();
+  const husbandBY=s.husband.dob.y, wifeBY=s.wife.dob.y;
+  let endYear=husbandBY+90;
+  if(endYear-startYear<30) endYear=startYear+30; // 最低30年
+  const enabled=s.children.filter(c=>c.enabled);
+  const childBirthYears=enabled.map(c=>c.dob.y);
+  const firstChild=enabled[0], lastChild=enabled[enabled.length-1];
+  const uniStartYear=firstChild ? firstChild.dob.y+18 : Infinity;
+  const allGradYear =lastChild  ? lastChild.dob.y+22 : Infinity;
+  const livingRate=num(s.living.rate)/100;
+
+  const mort=runMortgage(s.loan, s.rateChanges, s.lumpPrepays, husbandBY);
+  const infl=year=> s.options.inflateFixed ? Math.pow(1+num(s.options.inflRate)/100, year-startYear) : 1;
+
+  let cash=num(s.assets.cash), invest=num(s.assets.invest);
+  const ret=num(s.assets.return)/100;
+  const rows=[]; let depleteYear=null, peakTotal=-Infinity, minTotal=Infinity, eduLifetime=0;
+
+  for(let year=startYear; year<=endYear; year++){
+    const hAge=year-husbandBY, wAge=year-wifeBY;
+    // ---- 収入 ----
+    const hc=personComponents(s.husband, hAge, startYear-husbandBY);
+    let wc=personComponents(s.wife, wAge, startYear-wifeBY);
+    if(childBirthYears.includes(year)) wc={...wc, salary:0}; // 出産年は妻給与0
+    const edu=educationForYear(enabled, year, s.uniAloneExtra);
+    const extra=(s.extraIncome||[]).filter(e=>num(e.year)===year).reduce((a,e)=>a+num(e.amount),0);
+    const income=hc.salary+hc.lump+hc.pension + wc.salary+wc.lump+wc.pension + extra + edu.allowance;
+
+    // ---- 支出 ----
+    const eduCost=edu.total;
+    // 生活費
+    let living;
+    if(lastChild && year>=allGradYear){ living=num(s.living.base); }
+    else { const cap=Math.min(year, uniStartYear); const g=Math.max(0, cap-startYear); living=num(s.living.base)*Math.pow(1+livingRate, g); }
+    let reduce=0;
+    for(const c of enabled){ const N=nensu(year,c.dob); if(N>=19 && N<=22){ reduce += (c.uniHousing==='alone'?num(s.living.reduceAlone):num(s.living.reduceHome))*12; } }
+    living=Math.max(0, living-reduce);
+    // 住宅
+    const loanPay=mort[year] ? (mort[year].standard+mort[year].prepay) : 0;
+    const repair=(s.repair.has && num(s.repair.year)===year) ? num(s.repair.amount)*infl(year) : 0;
+    const appliance=(num(s.appliance.cycle)>0 && year>startYear && (year-startYear)%num(s.appliance.cycle)===0) ? num(s.appliance.amount)*infl(year) : 0;
+    const housing=loanPay+repair+appliance;
+    // 車・旅行（世帯主75歳未満のみ）
+    const car=(s.car.has && hAge<75 && num(s.car.cycle)>0 && year>startYear && (year-startYear)%num(s.car.cycle)===0) ? num(s.car.price)*infl(year) : 0;
+    const travel=(hAge<75) ? num(s.travel)*infl(year) : 0;
+    const medical=(s.medical.has && hAge>=num(s.medical.startAge)) ? num(s.medical.amount)*infl(year) : 0;
+    const expense=eduCost+living+housing+car+travel+medical;
+
+    // ---- 資産更新（順序厳守） ----
+    const contrib=(wAge>=num(s.wife.retireAge)) ? 0 : num(s.assets.contribution);
+    invest = invest*(1+ret) + contrib;   // 1. 運用＋積立
+    cash -= contrib;                      // 2. 積立は現金から拠出
+    cash += (income-expense);             // 3. 年間収支
+    if(cash<0){                           // 4. 不足は投資取り崩し
+      const need=-cash; const take=Math.min(need,invest);
+      invest-=take; cash+=take; if(cash<0) cash=0;
+    }
+    const total=invest+cash;              // 5. 合計
+
+    if(total<=0 && depleteYear===null && year>startYear) depleteYear=year;
+    peakTotal=Math.max(peakTotal,total); minTotal=Math.min(minTotal,total); eduLifetime+=eduCost;
+
+    rows.push({
+      year,hAge,wAge,
+      childCells:enabled.map(c=>{ const N=nensu(year,c.dob); return N<0?'—':(year-c.dob.y)+'歳('+gradeLabel(N)+')'; }),
+      income,edu:eduCost,living,housing,car,travel,medical,expense,invest,cash,total,
+      eduPerChild:edu.perChild.slice()
+    });
+  }
+
+  // 住宅ローン明細（昇順）
+  const loanRows=Object.keys(mort).map(Number).sort((a,b)=>a-b).map(yr=>({year:yr,age:yr-husbandBY,...mort[yr]}));
+
+  return {
+    startYear,endYear,rows,loanRows,
+    enabled:enabled.map((c,i)=>({i,label:'子'+(i+1)})),
+    summary:{ finalTotal:rows[rows.length-1].total, peakTotal, minTotal, eduLifetime, depleteYear }
+  };
+}
+
+/* =========================================================================
+   5. 状態管理 & 自動保存
+   ========================================================================= */
+const LS_KEY='lifeplan_v3';
+/* 変更不可にする生年月日フィールドの bind パス */
+const LOCKED=new Set(['husband.dob','wife.dob','children.0.dob','children.1.dob','children.2.dob']);
+let state = loadState();
+function loadState(){
+  try{ const raw=localStorage.getItem(LS_KEY); if(raw){ return deepMerge(clone(DEFAULTS), JSON.parse(raw)); } }catch(e){}
+  return clone(DEFAULTS);
+}
+function deepMerge(base, ext){ // ext を base に重ねる（配列はextを優先）
+  if(Array.isArray(base)) return Array.isArray(ext)?ext:base;
+  if(base && typeof base==='object'){ const o={...base}; for(const k in ext){ o[k]=deepMerge(base[k], ext[k]); } return o; }
+  return ext===undefined?base:ext;
+}
+function persist(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
+
+/* =========================================================================
+   6. フォーム生成（スキーマ駆動）
+   ========================================================================= */
+const SEL={
+  pre35:[['hoikuen','保育園'],['youchien','幼稚園']],
+  pubpri:[['public','公立'],['private','私立']],
+  uni:[['nationalH','国立文'],['nationalS','国立理'],['privateH','私立文'],['privateS','私立理']],
+  housing:[['home','自宅'],['alone','一人暮らし']],
+  lesson:[['low','少なめ'],['normal','普通'],['high','多め']],
+};
+const FORM=[
+ {title:'家族', fields:[
+   {bind:'husband.dob', label:'夫 生年月', type:'month'},
+   {bind:'wife.dob',    label:'妻 生年月', type:'month'},
+ ]},
+ {title:'収入（夫・手取り）', fields:[
+   {bind:'husband.monthly',   label:'月収', type:'num', u:'円'},
+   {bind:'husband.bonus',     label:'賞与(年)', type:'num', u:'円'},
+   {bind:'husband.raise',     label:'昇給率', type:'num', u:'%'},
+   {bind:'husband.peakAge',   label:'収入ピーク', type:'int', u:'歳'},
+   {bind:'husband.retireAge', label:'退職(給与0)', type:'int', u:'歳'},
+   {bind:'husband.retireLump',label:'退職金', type:'num', u:'円'},
+   {bind:'husband.pensionStart',label:'年金開始', type:'int', u:'歳'},
+   {bind:'husband.pensionAmt',label:'年金(年額)', type:'num', u:'円'},
+ ]},
+ {title:'収入（妻・手取り）', fields:[
+   {bind:'wife.monthly',   label:'月収', type:'num', u:'円'},
+   {bind:'wife.bonus',     label:'賞与(年)', type:'num', u:'円'},
+   {bind:'wife.raise',     label:'昇給率', type:'num', u:'%'},
+   {bind:'wife.peakAge',   label:'収入ピーク', type:'int', u:'歳'},
+   {bind:'wife.retireAge', label:'退職(給与0/積立停止)', type:'int', u:'歳'},
+   {bind:'wife.retireLump',label:'退職金', type:'num', u:'円'},
+   {bind:'wife.pensionStart',label:'年金開始', type:'int', u:'歳'},
+   {bind:'wife.pensionAmt',label:'年金(年額)', type:'num', u:'円'},
+ ]},
+ {title:'資産・投資', fields:[
+   {bind:'assets.cash',         label:'現在の現金', type:'num', u:'円'},
+   {bind:'assets.invest',       label:'現在の投資', type:'num', u:'円'},
+   {bind:'assets.contribution', label:'毎年の積立', type:'num', u:'円'},
+   {bind:'assets.return',       label:'想定利回り', type:'num', u:'%'},
+ ]},
+ {title:'生活費・その他', fields:[
+   {bind:'living.base',        label:'基準生活費(年)', type:'num', u:'円'},
+   {bind:'living.rate',        label:'生活費上昇率', type:'num', u:'%'},
+   {bind:'living.reduceHome',  label:'大学期減額(在宅・月)', type:'num', u:'円'},
+   {bind:'living.reduceAlone', label:'大学期減額(一人暮し・月)', type:'num', u:'円'},
+   {bind:'travel',             label:'旅行費(年)', type:'num', u:'円'},
+   {bind:'uniAloneExtra',      label:'大学一人暮し上乗せ(年)', type:'num', u:'円'},
+ ]},
+ {title:'住宅・車・家電', fields:[
+   {bind:'repair.has',     label:'大規模修繕あり', type:'bool'},
+   {bind:'repair.year',    label:'修繕の年', type:'int', u:'年'},
+   {bind:'repair.amount',  label:'修繕費', type:'num', u:'円'},
+   {bind:'appliance.cycle',label:'家電買替周期', type:'int', u:'年'},
+   {bind:'appliance.amount',label:'家電費', type:'num', u:'円'},
+   {bind:'car.has',        label:'車あり', type:'bool'},
+   {bind:'car.cycle',      label:'車買替周期', type:'int', u:'年'},
+   {bind:'car.price',      label:'車1台価格', type:'num', u:'円'},
+ ]},
+ {title:'住宅ローン', fields:[
+   {bind:'loan.principal', label:'借入総額', type:'num', u:'円'},
+   {bind:'loan.start',     label:'借入開始年月', type:'month'},
+   {bind:'loan.rate',      label:'当初金利', type:'num', u:'%'},
+   {bind:'loan.termYears', label:'返済年数', type:'int', u:'年'},
+   {bind:'loan.bonus',     label:'ボーナス返済(1回・6月/12月)', type:'num', u:'円'},
+ ]},
+ {title:'オプション', fields:[
+   {bind:'options.inflateFixed', label:'固定費にインフレ適用', type:'bool'},
+   {bind:'options.inflRate',     label:'固定費インフレ率', type:'num', u:'%'},
+   {bind:'medical.has',          label:'老後 医療・介護費', type:'bool'},
+   {bind:'medical.startAge',     label:'医療介護 開始年齢', type:'int', u:'歳'},
+   {bind:'medical.amount',       label:'医療介護(年額)', type:'num', u:'円'},
+ ]},
+];
+
+function fieldHTML(f){
+  const v=getPath(state, f.bind);
+  const locked=LOCKED.has(f.bind);
+  const badge=locked?` <span class="lock-badge">固定</span>`:'';
+  if(f.type==='bool'){
+    return `<label class="field check"><input type="checkbox" data-bind="${f.bind}" data-type="bool" ${v?'checked':''}><span>${f.label}</span></label>`;
+  }
+  let control;
+  if(f.type==='month'){
+    control=`<input type="month" data-bind="${f.bind}" data-type="month" value="${monthToStr(v)}"${locked?' readonly class="locked-input"':''}>`;
+  } else if(f.type==='select'){
+    control=`<select data-bind="${f.bind}" data-type="str">`+f.options.map(o=>`<option value="${o[0]}" ${v===o[0]?'selected':''}>${o[1]}</option>`).join('')+`</select>`;
+  } else {
+    control=`<input type="text" inputmode="numeric" data-bind="${f.bind}" data-type="${f.type}" value="${fmtInput(v)}">`;
+  }
+  return `<label class="field"><span class="flabel">${f.label}${f.u?` <em>${f.u}</em>`:''}${badge}</span>${control}</label>`;
+}
+
+function buildForm(){
+  const host=document.getElementById('formHost');
+  host.innerHTML=FORM.map(g=>`<div class="card"><h2>${g.title}</h2><div class="grid">${g.fields.map(fieldHTML).join('')}</div></div>`).join('');
+}
+
+function selHTML(bind,val,opts){ return `<select data-bind="${bind}" data-type="str">`+opts.map(o=>`<option value="${o[0]}" ${val===o[0]?'selected':''}>${o[1]}</option>`).join('')+`</select>`; }
+function buildChildren(){
+  const CHILD_NAMES=['長男','次男','三男','第4子'];
+  const host=document.getElementById('childHost');
+  host.innerHTML=state.children.map((c,i)=>{
+    const b=`children.${i}`;
+    const dobLocked=LOCKED.has(`${b}.dob`);
+    // 第1〜3子は有効固定、第4子のみトグル可
+    const toggle = i<3
+      ? `<span style="font-size:11px;color:var(--accent);background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:2px 8px;">🔒 固定</span>`
+      : `<label class="field check" style="padding:4px 8px"><input type="checkbox" data-bind="${b}.enabled" data-type="bool" ${c.enabled?'checked':''}><span>この子を含める</span></label>`;
+    return `<div class="child ${c.enabled?'':'disabled'}" data-child="${i}">
+      <div class="childhead"><span class="nm">${CHILD_NAMES[i]||('第'+(i+1)+'子')}</span>${toggle}</div>
+      <div class="grid">
+        <label class="field"><span class="flabel">生年月${dobLocked?' <span class="lock-badge">固定</span>':''}</span><input type="month" data-bind="${b}.dob" data-type="month" value="${monthToStr(c.dob)}"${dobLocked?' readonly class="locked-input"':''}></label>
+        <label class="field"><span class="flabel">0-2歳保育料上限 <em>月/円</em></span><input type="text" inputmode="numeric" data-bind="${b}.cap02" data-type="num" value="${fmtInput(c.cap02)}"></label>
+        <label class="field"><span class="flabel">3-5歳 通園</span>${selHTML(b+'.pre35',c.pre35,SEL.pre35)}</label>
+        <label class="field"><span class="flabel">中学</span>${selHTML(b+'.junior',c.junior,SEL.pubpri)}</label>
+        <label class="field"><span class="flabel">高校</span>${selHTML(b+'.high',c.high,SEL.pubpri)}</label>
+        <label class="field"><span class="flabel">大学</span>${selHTML(b+'.uni',c.uni,SEL.uni)}</label>
+        <label class="field"><span class="flabel">大学の住まい</span>${selHTML(b+'.uniHousing',c.uniHousing,SEL.housing)}</label>
+        <label class="field"><span class="flabel">習い事</span>${selHTML(b+'.lesson',c.lesson,SEL.lesson)}</label>
+        <label class="field check"><input type="checkbox" data-bind="${b}.allowance" data-type="bool" ${c.allowance?'checked':''}><span>児童手当</span></label>
+        <label class="field check"><input type="checkbox" data-bind="${b}.highFree" data-type="bool" ${c.highFree?'checked':''}><span>高校無償化</span></label>
+        <label class="field check"><input type="checkbox" data-bind="${b}.uniFree" data-type="bool" ${c.uniFree?'checked':''}><span>大学無償化(多子)</span></label>
+      </div>
+    </div><div style="height:10px"></div>`;
+  }).join('');
+}
+
+/* 動的リスト（金利変更・一括繰上・臨時収入） */
+function renderDynList(host, arr, cols){
+  host.innerHTML='';
+  arr.forEach((row,i)=>{
+    const div=document.createElement('div'); div.className='dynrow';
+    cols.forEach(col=>{
+      const wrap=document.createElement('label'); wrap.className='dynfield';
+      const sp=document.createElement('span'); sp.textContent=col.label; wrap.appendChild(sp);
+      const inp=document.createElement('input'); inp.type='text';
+      const raw=row[col.key]??'';
+      inp.inputMode = col.comma ? 'numeric' : 'decimal';
+      inp.value = col.comma && raw ? num(raw).toLocaleString('ja-JP') : (raw||'');
+      if(col.comma){
+        inp.addEventListener('focus', ()=>{ inp.value=inp.value.replace(/,/g,''); });
+        inp.addEventListener('blur',  ()=>{ const n=num(inp.value); inp.value=n?n.toLocaleString('ja-JP'):''; });
+      }
+      inp.addEventListener('input',()=>{ row[col.key]=col.comma?num(inp.value):(inp.value===''?0:Number(inp.value)); persist(); });
+      wrap.appendChild(inp); div.appendChild(wrap);
+    });
+    const del=document.createElement('button'); del.type='button'; del.className='btn-del'; del.textContent='削除';
+    del.addEventListener('click',()=>{ arr.splice(i,1); renderDynList(host,arr,cols); persist(); });
+    div.appendChild(del); host.appendChild(div);
+  });
+  if(arr.length===0){ host.innerHTML='<div class="note">（未設定）</div>'; }
+}
+function buildDynLists(){
+  renderDynList(document.getElementById('rateHost'), state.rateChanges, [{key:'year',label:'年'},{key:'month',label:'月'},{key:'rate',label:'金利%'}]);
+  renderDynList(document.getElementById('lumpHost'), state.lumpPrepays, [{key:'year',label:'年'},{key:'month',label:'月'},{key:'amount',label:'金額',comma:true}]);
+  renderDynList(document.getElementById('extraHost'), state.extraIncome, [{key:'year',label:'年'},{key:'amount',label:'金額',comma:true}]);
+  // 定例繰上（静的）
+  const recurFields=[
+    {bind:'loan.recurPrepay.amount',label:'定例 金額',type:'num',u:'円'},
+    {bind:'loan.recurPrepay.month',label:'実施月',type:'int',u:'月'},
+    {bind:'loan.recurPrepay.startYear',label:'開始年',type:'int',u:'年'},
+    {bind:'loan.recurPrepay.endYear',label:'終了年',type:'int',u:'年'},
+  ];
+  document.getElementById('recurHost').innerHTML=recurFields.map(fieldHTML).join('');
+}
+
+/* フォーム → state（静的 data-bind を一括読込） */
+function readFormToState(){
+  document.querySelectorAll('#inputView [data-bind]').forEach(el=>{
+    const bind=el.dataset.bind, t=el.dataset.type;
+    let v;
+    if(t==='bool') v=el.checked;
+    else if(t==='month') v=strToMonth(el.value);
+    else if(t==='num'){ v=el.value===''?0:Number(el.value.replace(/,/g,'')); if(!isFinite(v)) v=0; }
+    else if(t==='int'){ v=el.value===''?0:Math.round(Number(el.value.replace(/,/g,''))); if(!isFinite(v)) v=0; }
+    else v=el.value;
+    setPath(state, bind, v);
+  });
+}
+function syncAndSave(){ readFormToState(); persist(); }
+
+/* =========================================================================
+   7. 結果描画
+   ========================================================================= */
+function renderResults(R){
+  // サマリ
+  const dep=R.summary.depleteYear;
+  document.getElementById('summaryHost').innerHTML=`<div class="sumgrid">
+    <div class="sum"><div class="k">最終資産（${R.endYear}年）</div><div class="v ${R.summary.finalTotal<=0?'neg':'pos'}">${fmt(R.summary.finalTotal)}<span class="u"> 円</span></div></div>
+    <div class="sum"><div class="k">資産ピーク</div><div class="v">${man(R.summary.peakTotal)}<span class="u"> 万円</span></div></div>
+    <div class="sum"><div class="k">資産の最小値</div><div class="v ${R.summary.minTotal<=0?'neg':''}">${man(R.summary.minTotal)}<span class="u"> 万円</span></div></div>
+    <div class="sum"><div class="k">生涯教育費（試算期間）</div><div class="v">${man(R.summary.eduLifetime)}<span class="u"> 万円</span></div></div>
+    <div class="sum"><div class="k">資産が枯渇する年</div><div class="v ${dep?'neg':'pos'}">${dep?dep+'年':'なし'}</div></div>
+  </div>`;
+  document.getElementById('alertHost').innerHTML = dep
+    ? `<div class="alert">⚠️ <b>${dep}年</b>に合計資産が0（枯渇）になります。収入・支出・積立・運用利回りの前提を見直してください。</div>`
+    : `<div class="ok">✅ 試算期間（${R.endYear}年）まで合計資産はプラスを維持します。</div>`;
+
+  // グラフ
+  drawAssetChart(document.getElementById('assetChart'), R.rows);
+  drawEduChart(document.getElementById('eduChart'), R.rows);
+
+  // テーブル
+  renderCF(R); renderEdu(R); renderLoan(R);
+}
+
+function renderCF(R){
+  const childCols=R.enabled.map(c=>`<th>${c.label}</th>`).join('');
+  const head=`<tr><th class="sticky-col">年</th><th>夫</th><th>妻</th>${childCols}<th>収入</th><th>教育</th><th>生活</th><th>住宅</th><th>車</th><th>旅行</th><th>医療</th><th>支出計</th><th>投資残高</th><th>現金</th><th>合計資産</th></tr>`;
+  const body=R.rows.map(r=>{
+    const cells=r.childCells.map(c=>`<td class="lbl">${c}</td>`).join('');
+    return `<tr class="${r.total<=0?'depleted':''}"><td class="sticky-col">${r.year}</td><td>${r.hAge}</td><td>${r.wAge}</td>${cells}`+
+      `<td>${fmt(r.income)}</td><td>${fmt(r.edu)}</td><td>${fmt(r.living)}</td><td>${fmt(r.housing)}</td><td>${fmt(r.car)}</td><td>${fmt(r.travel)}</td><td>${fmt(r.medical)}</td>`+
+      `<td>${fmt(r.expense)}</td><td>${fmt(r.invest)}</td><td class="${r.cash<=0?'neg':''}">${fmt(r.cash)}</td><td class="${r.total<=0?'neg':''}"><b>${fmt(r.total)}</b></td></tr>`;
+  }).join('');
+  document.getElementById('cfTable').innerHTML=`<table>${head}${body}</table>`;
+}
+function renderEdu(R){
+  const childCols=R.enabled.map(c=>`<th>${c.label}</th>`).join('');
+  const head=`<tr><th class="sticky-col">年</th>${childCols}<th>合計</th></tr>`;
+  const body=R.rows.filter(r=>r.edu>0).map(r=>{
+    const cells=r.eduPerChild.map(v=>`<td>${v>0?fmt(v):'—'}</td>`).join('');
+    return `<tr><td class="sticky-col">${r.year}</td>${cells}<td><b>${fmt(r.edu)}</b></td></tr>`;
+  }).join('');
+  document.getElementById('eduTable').innerHTML=`<table>${head}${body||'<tr><td class="lbl" colspan="9">教育費の発生年はありません</td></tr>'}</table>`;
+}
+function renderLoan(R){
+  if(!R.loanRows.length){ document.getElementById('loanTable').innerHTML='<table><tr><td class="lbl">住宅ローンは設定されていません</td></tr></table>'; return; }
+  const head=`<tr><th class="sticky-col">年</th><th>夫年齢</th><th>期首残高</th><th>標準返済</th><th>繰上</th><th>利息</th><th>年末残高</th><th>適用金利</th></tr>`;
+  const body=R.loanRows.map(r=>`<tr><td class="sticky-col">${r.year}</td><td>${r.age}</td><td>${fmt(r.begin||0)}</td><td>${fmt(r.standard)}</td><td>${r.prepay?fmt(r.prepay):'—'}</td><td>${fmt(r.interest)}</td><td>${fmt(r.end)}</td><td>${r.rate.toFixed(3)}%</td></tr>`).join('');
+  document.getElementById('loanTable').innerHTML=`<table>${head}${body}</table>`;
+}
+
+/* ---- SVG チャート（自前） ---- */
+function chartFrame(W,H,pad,xs,ymin,ymax){
+  const X=v=> pad.l + (v-xs.min)/((xs.max-xs.min)||1)*(W-pad.l-pad.r);
+  const Y=v=> (H-pad.b) - (v-ymin)/((ymax-ymin)||1)*(H-pad.t-pad.b);
+  return {X,Y};
+}
+function yTicks(ymin,ymax,n){
+  const ticks=[]; for(let i=0;i<=n;i++) ticks.push(ymin+(ymax-ymin)*i/n); return ticks;
+}
+function drawAssetChart(box, rows){
+  const W=860,H=300,pad={l:56,r:14,t:12,b:26};
+  const years=rows.map(r=>r.year), totals=rows.map(r=>r.total), invs=rows.map(r=>r.invest);
+  const xs={min:Math.min(...years),max:Math.max(...years)};
+  const ymax=Math.max(1,...totals)*1.08, ymin=Math.min(0,...totals);
+  const {X,Y}=chartFrame(W,H,pad,xs,ymin,ymax);
+  const area=`M ${X(years[0])} ${Y(0)} `+rows.map(r=>`L ${X(r.year).toFixed(1)} ${Y(r.total).toFixed(1)}`).join(' ')+` L ${X(years[years.length-1])} ${Y(0)} Z`;
+  const line=rows.map((r,i)=>`${i?'L':'M'} ${X(r.year).toFixed(1)} ${Y(r.total).toFixed(1)}`).join(' ');
+  const invLine=rows.map((r,i)=>`${i?'L':'M'} ${X(r.year).toFixed(1)} ${Y(r.invest).toFixed(1)}`).join(' ');
+  const yt=yTicks(ymin,ymax,4);
+  const grid=yt.map(v=>`<line x1="${pad.l}" y1="${Y(v).toFixed(1)}" x2="${W-pad.r}" y2="${Y(v).toFixed(1)}" stroke="#eef2f7"/><text x="${pad.l-6}" y="${(Y(v)+3).toFixed(1)}" text-anchor="end" font-size="10" fill="#94a3b8">${man(v)}万</text>`).join('');
+  const xstep=Math.ceil(years.length/8);
+  const xlab=years.filter((y,i)=>i%xstep===0||i===years.length-1).map(y=>`<text x="${X(y).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#94a3b8">${y}</text>`).join('');
+  const zero=ymin<0?`<line x1="${pad.l}" y1="${Y(0).toFixed(1)}" x2="${W-pad.r}" y2="${Y(0).toFixed(1)}" stroke="#fca5a5" stroke-dasharray="3 3"/>`:'';
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity="0.28"/><stop offset="1" stop-color="#2563eb" stop-opacity="0.02"/></linearGradient></defs>
+    ${grid}${zero}<path d="${area}" fill="url(#ag)"/><path d="${invLine}" fill="none" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="4 3"/><path d="${line}" fill="none" stroke="#2563eb" stroke-width="2.2"/>
+    <line id="ac-vline" x1="0" y1="${pad.t}" x2="0" y2="${H-pad.b}" stroke="#2563eb" stroke-width="1" opacity="0"/>
+    <circle id="ac-dot" r="3.5" fill="#2563eb" opacity="0"/>
+    <rect x="${pad.l}" y="${pad.t}" width="${W-pad.l-pad.r}" height="${H-pad.t-pad.b}" fill="transparent" id="ac-hit"/></svg>
+    ${xlab?'':''}<div class="tip" id="ac-tip"></div>`;
+  // re-add x labels into svg (they were outside)
+  const svg=box.querySelector('svg'); svg.insertAdjacentHTML('beforeend', xlab);
+  attachHover(box, rows, X, Y, 'ac', r=>`${r.year}年　合計 <b>${fmt(r.total)}</b>円<br>投資 ${fmt(r.invest)} / 現金 ${fmt(r.cash)}`);
+}
+function drawEduChart(box, rows){
+  const data=rows.filter(r=>r.edu>0);
+  if(!data.length){ box.innerHTML='<div class="note">教育費の発生年はありません。</div>'; return; }
+  const W=860,H=260,pad={l:56,r:14,t:12,b:26};
+  const years=data.map(r=>r.year); const xs={min:Math.min(...years),max:Math.max(...years)};
+  const ymax=Math.max(1,...data.map(r=>r.edu))*1.08;
+  const {X,Y}=chartFrame(W,H,pad,xs,0,ymax);
+  const bw=Math.max(3,(W-pad.l-pad.r)/data.length*0.7);
+  const bars=data.map(r=>{ const x=X(r.year)-bw/2, y=Y(r.edu); return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(Y(0)-y).toFixed(1)}" rx="2" fill="#f59e0b" opacity="0.85"/>`; }).join('');
+  const yt=yTicks(0,ymax,4);
+  const grid=yt.map(v=>`<line x1="${pad.l}" y1="${Y(v).toFixed(1)}" x2="${W-pad.r}" y2="${Y(v).toFixed(1)}" stroke="#eef2f7"/><text x="${pad.l-6}" y="${(Y(v)+3).toFixed(1)}" text-anchor="end" font-size="10" fill="#94a3b8">${man(v)}万</text>`).join('');
+  const xstep=Math.ceil(data.length/8);
+  const xlab=data.filter((r,i)=>i%xstep===0||i===data.length-1).map(r=>`<text x="${X(r.year).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#94a3b8">${r.year}</text>`).join('');
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${grid}${bars}${xlab}
+    <line id="ed-vline" x1="0" y1="${pad.t}" x2="0" y2="${H-pad.b}" stroke="#b45309" stroke-width="1" opacity="0"/>
+    <rect x="${pad.l}" y="${pad.t}" width="${W-pad.l-pad.r}" height="${H-pad.t-pad.b}" fill="transparent" id="ed-hit"/></svg><div class="tip" id="ed-tip"></div>`;
+  attachHover(box, data, X, Y, 'ed', r=>`${r.year}年　教育費 <b>${fmt(r.edu)}</b>円`);
+}
+function attachHover(box, data, X, Y, id, tipFn){
+  const svg=box.querySelector('svg'); const hit=svg.querySelector('#'+id+'-hit');
+  const tip=box.querySelector('#'+id+'-tip'); const vline=svg.querySelector('#'+id+'-vline'); const dot=svg.querySelector('#'+id+'-dot');
+  const move=ev=>{
+    const rect=svg.getBoundingClientRect(); const cx=ev.touches?ev.touches[0].clientX:ev.clientX;
+    const px=(cx-rect.left)/rect.width*svg.viewBox.baseVal.width;
+    let best=0,bd=1e9; data.forEach((r,i)=>{ const d=Math.abs(X(r.year)-px); if(d<bd){bd=d;best=i;} });
+    const r=data[best]; const sx=X(r.year), sy=Y(r.total!==undefined?r.total:r.edu);
+    vline.setAttribute('x1',sx); vline.setAttribute('x2',sx); vline.setAttribute('opacity','0.5');
+    if(dot){ dot.setAttribute('cx',sx); dot.setAttribute('cy',sy); dot.setAttribute('opacity','1'); }
+    tip.style.opacity='1';
+    tip.style.left=(sx/svg.viewBox.baseVal.width*rect.width)+'px';
+    tip.style.top=(sy/svg.viewBox.baseVal.height*rect.height)+'px';
+    tip.innerHTML=tipFn(r);
+  };
+  const leave=()=>{ tip.style.opacity='0'; vline.setAttribute('opacity','0'); if(dot) dot.setAttribute('opacity','0'); };
+  hit.addEventListener('mousemove',move); hit.addEventListener('mouseleave',leave);
+  hit.addEventListener('touchstart',move,{passive:true}); hit.addEventListener('touchmove',move,{passive:true}); hit.addEventListener('touchend',leave);
+}
+
+/* =========================================================================
+   8. イベント・初期化
+   ========================================================================= */
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.getElementById('inputView').classList.toggle('active', name==='input');
+  document.getElementById('resultView').classList.toggle('active', name==='result');
+  window.scrollTo(0,0);
+}
+function switchSub(name){
+  document.querySelectorAll('.subtab').forEach(t=>t.classList.toggle('active', t.dataset.sub===name));
+  ['charts','cf','edu','loan'].forEach(s=>{ document.getElementById('sub-'+s).style.display = (s===name)?'block':'none'; });
+}
+function runCalc(){
+  syncAndSave();
+  try{
+    const R=simulate(state);
+    renderResults(R);
+    switchTab('result'); switchSub('charts');
+  }catch(e){ alert('計算エラー: '+e.message); console.error(e); }
+}
+
+/* フォーカス時カンマ除去・ブラー時カンマ付与 */
+function attachCommaFormat(root){
+  root.querySelectorAll('input[data-type="num"],input[data-type="int"]').forEach(el=>{
+    if(el.classList.contains('locked-input')) return; // 固定フィールドは不要
+    el.addEventListener('focus', ()=>{ el.value=el.value.replace(/,/g,''); });
+    el.addEventListener('blur',  ()=>{ const n=num(el.value); el.value=n?n.toLocaleString('ja-JP'):''; });
+  });
+}
+
+function init(){
+  buildForm();    attachCommaFormat(document.getElementById('formHost'));
+  buildChildren();attachCommaFormat(document.getElementById('childHost'));
+  buildDynLists();
+
+  // 自動保存（入力変更時）＋ 子の有効/無効トグルで再描画
+  document.getElementById('inputView').addEventListener('input', e=>{
+    syncAndSave();
+    if(e.target.dataset && e.target.dataset.bind && /children\.\d+\.enabled/.test(e.target.dataset.bind)){
+      const card=e.target.closest('.child'); if(card) card.classList.toggle('disabled', !e.target.checked);
+    }
+  });
+  document.getElementById('inputView').addEventListener('change', syncAndSave);
+
+  document.getElementById('addRate').addEventListener('click',()=>{ state.rateChanges.push({year:new Date().getFullYear()+1,month:1,rate:1.0}); buildDynLists(); persist(); });
+  document.getElementById('addLump').addEventListener('click',()=>{ state.lumpPrepays.push({year:new Date().getFullYear()+1,month:12,amount:1000000}); buildDynLists(); persist(); });
+  document.getElementById('addExtra').addEventListener('click',()=>{ state.extraIncome.push({year:new Date().getFullYear()+1,amount:1000000}); buildDynLists(); persist(); });
+
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
+  document.querySelectorAll('.subtab').forEach(t=>t.addEventListener('click',()=>switchSub(t.dataset.sub)));
+  document.getElementById('calcBtn').addEventListener('click',runCalc);
+  document.getElementById('backBtn').addEventListener('click',()=>switchTab('input'));
+  document.getElementById('resetBtn').addEventListener('click',()=>{
+    if(confirm('入力を既定値に戻します。よろしいですか？')){ state=clone(DEFAULTS); persist(); buildForm(); attachCommaFormat(document.getElementById('formHost')); buildChildren(); attachCommaFormat(document.getElementById('childHost')); buildDynLists(); }
+  });
+
+  // 初回計算（保存済み入力で結果も用意）
+  try{ renderResults(simulate(state)); }catch(e){ console.error(e); }
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
