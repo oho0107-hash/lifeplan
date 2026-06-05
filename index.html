@@ -17,9 +17,15 @@
     background:var(--bg); color:var(--ink); font-size:14px; line-height:1.5; -webkit-text-size-adjust:100%;
   }
   .wrap{max-width:1180px; margin:0 auto; padding:12px;}
-  header.app{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; padding:6px 4px 12px;}
+  header.app{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:6px 4px 12px;}
   header.app h1{font-size:18px; margin:0;}
   header.app .muted{color:var(--sub); font-size:12px;}
+  #saveIndicator{
+    font-size:11px; padding:3px 10px; border-radius:999px;
+    background:#dcfce7; color:#15803d; border:1px solid #86efac;
+    opacity:0; transition:opacity 0.4s; flex-shrink:0;
+  }
+  #saveIndicator.show{ opacity:1; }
 
   /* tabs */
   .tabs{display:flex; gap:6px; flex-wrap:wrap; position:sticky; top:0; z-index:20; background:var(--bg); padding:6px 0; border-bottom:1px solid var(--line);}
@@ -114,6 +120,7 @@
   <header class="app">
     <h1>ライフプラン・シミュレーター</h1>
     <span class="muted">世帯主90歳までの年次キャッシュフロー試算（完全オフライン・自動保存）</span>
+    <span id="saveIndicator">💾 保存しました</span>
   </header>
 
   <div class="tabs">
@@ -538,7 +545,28 @@ function deepMerge(base, ext){ // ext を base に重ねる（配列はextを優
   if(base && typeof base==='object'){ const o={...base}; for(const k in ext){ o[k]=deepMerge(base[k], ext[k]); } return o; }
   return ext===undefined?base:ext;
 }
-function persist(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
+let _saveTimer=null;
+function persist(immediate){
+  if(immediate){
+    _doSave();
+  } else {
+    clearTimeout(_saveTimer);
+    _saveTimer=setTimeout(_doSave, 800);
+  }
+}
+function _doSave(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    const el=document.getElementById('saveIndicator');
+    if(el){
+      const now=new Date();
+      el.textContent='💾 保存しました '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+      el.classList.add('show');
+      clearTimeout(el._hideTimer);
+      el._hideTimer=setTimeout(()=>el.classList.remove('show'), 2500);
+    }
+  }catch(e){}
+}
 
 /* =========================================================================
    6. フォーム生成（スキーマ駆動）
@@ -684,11 +712,11 @@ function renderDynList(host, arr, cols){
         inp.addEventListener('focus', ()=>{ inp.value=inp.value.replace(/,/g,''); });
         inp.addEventListener('blur',  ()=>{ const n=num(inp.value); inp.value=n?n.toLocaleString('ja-JP'):''; });
       }
-      inp.addEventListener('input',()=>{ row[col.key]=col.comma?num(inp.value):(inp.value===''?0:Number(inp.value)); persist(); });
+      inp.addEventListener('input',()=>{ row[col.key]=col.comma?num(inp.value):(inp.value===''?0:Number(inp.value)); persist(false); });
       wrap.appendChild(inp); div.appendChild(wrap);
     });
     const del=document.createElement('button'); del.type='button'; del.className='btn-del'; del.textContent='削除';
-    del.addEventListener('click',()=>{ arr.splice(i,1); renderDynList(host,arr,cols); persist(); });
+    del.addEventListener('click',()=>{ arr.splice(i,1); renderDynList(host,arr,cols); persist(true); });
     div.appendChild(del); host.appendChild(div);
   });
   if(arr.length===0){ host.innerHTML='<div class="note">（未設定）</div>'; }
@@ -720,7 +748,7 @@ function readFormToState(){
     setPath(state, bind, v);
   });
 }
-function syncAndSave(){ readFormToState(); persist(); }
+function syncAndSave(immediate){ readFormToState(); persist(immediate===true); }
 
 /* =========================================================================
    7. 結果描画
@@ -860,7 +888,7 @@ function switchSub(name){
   ['charts','cf','edu','loan'].forEach(s=>{ document.getElementById('sub-'+s).style.display = (s===name)?'block':'none'; });
 }
 function runCalc(){
-  syncAndSave();
+  syncAndSave(true);
   try{
     const R=simulate(state);
     renderResults(R);
@@ -891,16 +919,16 @@ function init(){
   });
   document.getElementById('inputView').addEventListener('change', syncAndSave);
 
-  document.getElementById('addRate').addEventListener('click',()=>{ state.rateChanges.push({year:new Date().getFullYear()+1,month:1,rate:1.0}); buildDynLists(); persist(); });
-  document.getElementById('addLump').addEventListener('click',()=>{ state.lumpPrepays.push({year:new Date().getFullYear()+1,month:12,amount:1000000}); buildDynLists(); persist(); });
-  document.getElementById('addExtra').addEventListener('click',()=>{ state.extraIncome.push({year:new Date().getFullYear()+1,amount:1000000}); buildDynLists(); persist(); });
+  document.getElementById('addRate').addEventListener('click',()=>{ state.rateChanges.push({year:new Date().getFullYear()+1,month:1,rate:1.0}); buildDynLists(); persist(true); });
+  document.getElementById('addLump').addEventListener('click',()=>{ state.lumpPrepays.push({year:new Date().getFullYear()+1,month:12,amount:1000000}); buildDynLists(); persist(true); });
+  document.getElementById('addExtra').addEventListener('click',()=>{ state.extraIncome.push({year:new Date().getFullYear()+1,amount:1000000}); buildDynLists(); persist(true); });
 
   document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
   document.querySelectorAll('.subtab').forEach(t=>t.addEventListener('click',()=>switchSub(t.dataset.sub)));
   document.getElementById('calcBtn').addEventListener('click',runCalc);
   document.getElementById('backBtn').addEventListener('click',()=>switchTab('input'));
   document.getElementById('resetBtn').addEventListener('click',()=>{
-    if(confirm('入力を既定値に戻します。よろしいですか？')){ state=clone(DEFAULTS); persist(); buildForm(); attachCommaFormat(document.getElementById('formHost')); buildChildren(); attachCommaFormat(document.getElementById('childHost')); buildDynLists(); }
+    if(confirm('入力を既定値に戻します。よろしいですか？')){ state=clone(DEFAULTS); persist(true); buildForm(); attachCommaFormat(document.getElementById('formHost')); buildChildren(); attachCommaFormat(document.getElementById('childHost')); buildDynLists(); }
   });
 
   // 初回計算（保存済み入力で結果も用意）
