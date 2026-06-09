@@ -139,6 +139,32 @@
   .locked-input{background:#f0f9ff !important; color:#0369a1 !important; border-color:#bae6fd !important; cursor:not-allowed;}
   .lock-badge{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:600;color:#0369a1;background:#e0f2fe;border:1px solid #bae6fd;border-radius:4px;padding:0 5px;line-height:16px;}
   .lock-badge::before{content:'🔒';font-size:9px;}
+
+  /* ---- FAMILY TIMELINE ---- */
+  .ev-strip{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 14px;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scrollbar-width:thin;}
+  .ev-strip::-webkit-scrollbar{height:4px;}.ev-strip::-webkit-scrollbar-track{background:#f1f5f9;border-radius:2px;}.ev-strip::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:2px;}
+  .ev-card{flex-shrink:0;width:126px;border-radius:18px;padding:13px 10px 11px;text-align:center;scroll-snap-align:start;border:1px solid rgba(0,0,0,.08);box-shadow:0 2px 10px rgba(0,0,0,.07);transition:transform .15s;}
+  .ev-card:hover{transform:translateY(-3px);}
+  .ev-card .ec-yr{font-size:10px;font-weight:700;opacity:.6;letter-spacing:.06em;}
+  .ev-card .ec-ico{font-size:38px;margin:5px 0 4px;line-height:1.1;}
+  .ev-card .ec-txt{font-size:12px;font-weight:800;color:#1e293b;line-height:1.35;}
+  .ev-card .ec-sub{font-size:10px;color:#64748b;margin-top:4px;line-height:1.4;}
+  .ev-card.ec-now{box-shadow:0 0 0 2.5px #2563eb,0 4px 14px rgba(37,99,235,.25);}
+
+  /* ---- SWIMLANE (Gantt) ---- */
+  .swim-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
+  .swim-row{display:flex;align-items:center;margin:3px 0;}
+  .swim-name{width:36px;flex-shrink:0;font-size:11px;font-weight:700;color:#64748b;text-align:right;padding-right:6px;}
+  .swim-bars{flex:1;display:flex;height:26px;gap:1px;}
+  .swim-seg{display:flex;align-items:center;justify-content:center;border-radius:4px;overflow:hidden;font-size:9px;font-weight:700;padding:0 3px;white-space:nowrap;position:relative;cursor:default;transition:filter .1s;}
+  .swim-seg:hover{filter:brightness(1.08);}
+  .swim-seg .seg-lbl{overflow:hidden;text-overflow:ellipsis;}
+  .swim-xrow{display:flex;margin-left:36px;margin-top:5px;position:relative;height:14px;}
+  .swim-xtick{position:absolute;font-size:9px;color:#94a3b8;transform:translateX(-50%);}
+  .stage-legend{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 6px;font-size:11px;color:var(--sub);}
+  .stage-legend span{display:inline-flex;align-items:center;gap:4px;}
+  .stage-legend i{width:12px;height:12px;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.08);}
+
   @media (max-width:520px){
     .wrap{padding:8px;}
     .grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}
@@ -203,13 +229,26 @@
     <div id="alertHost"></div>
 
     <div class="subtabs">
-      <button class="subtab active" data-sub="charts">グラフ</button>
+      <button class="subtab active" data-sub="family">👨‍👩‍👧 ファミリー年表</button>
+      <button class="subtab" data-sub="charts">📈 グラフ</button>
       <button class="subtab" data-sub="cf">キャッシュフロー表</button>
       <button class="subtab" data-sub="edu">教育費サマリ</button>
       <button class="subtab" data-sub="loan">住宅ローン明細</button>
     </div>
 
-    <div id="sub-charts" class="subview">
+    <div id="sub-family" class="subview" style="display:none">
+      <div class="card">
+        <h2>🎉 ライフイベント カード<span class="hint">← 横にスクロール</span></h2>
+        <div id="evStripHost"></div>
+      </div>
+      <div class="card">
+        <h2>🌈 ライフステージ チャート</h2>
+        <div class="stage-legend" id="stageLegendHost"></div>
+        <div class="swim-outer" id="swimHost"></div>
+      </div>
+    </div>
+
+    <div id="sub-charts" class="subview" style="display:none">
       <div class="card">
         <div class="chart-header">
           <div class="chart-title">📈 合計資産の推移</div>
@@ -789,7 +828,150 @@ function readFormToState(){
 function syncAndSave(immediate){ readFormToState(); persist(immediate===true); }
 
 /* =========================================================================
-   7. 結果描画
+   7. ファミリー年表
+   ========================================================================= */
+const STAGE_DEF={
+  unborn: {color:'#f1f5f9',text:'#94a3b8',icon:'',label:'未誕生'},
+  nursery:{color:'#fce7f3',text:'#9d174d',icon:'👶',label:'保育園'},
+  pre35:  {color:'#fef9c3',text:'#854d0e',icon:'🌸',label:'幼稚園'},
+  elem:   {color:'#bbf7d0',text:'#065f46',icon:'🏫',label:'小学校'},
+  junior: {color:'#bfdbfe',text:'#1e40af',icon:'📚',label:'中学校'},
+  high:   {color:'#ede9fe',text:'#5b21b6',icon:'🎒',label:'高 校'},
+  univ:   {color:'#ffedd5',text:'#c2410c',icon:'🎓',label:'大 学'},
+  grad:   {color:'#e0f2fe',text:'#0c4a6e',icon:'💼',label:'社会人'},
+  work_p: {color:'#dbeafe',text:'#1e3a8a',icon:'💼',label:'会社員'},
+  retire: {color:'#fce7f3',text:'#9d174d',icon:'🏖️',label:'定年後'},
+  pension:{color:'#d1fae5',text:'#065f46',icon:'💰',label:'年 金'},
+};
+
+/* childCells の文字列 → ステージキー（詳細: swimlane用） */
+function pChildDetailed(cell){
+  if(!cell||cell==='—') return 'unborn';
+  if(cell.includes('(幼保)')){const age=parseInt(cell)||0; return age<=2?'nursery':'pre35';}
+  if(cell.includes('(小')) return 'elem';
+  if(cell.includes('(中')) return 'junior';
+  if(cell.includes('(高')) return 'high';
+  if(cell.includes('(大')) return 'univ';
+  return 'grad'; // 卒 or any other
+}
+/* イベント検出用（幼保を一括） */
+function pChildSimple(cell){
+  if(!cell||cell==='—') return 'unborn';
+  if(cell.includes('(幼保)')) return 'preschool';
+  return pChildDetailed(cell);
+}
+function pParentStage(age,ret){
+  return age<ret?'work_p':age<65?'retire':'pension';
+}
+
+/* ライフイベント一覧を計算 */
+function calcFamilyEvents(rows, st){
+  const CN=['長男','次男','三男','第4子'];
+  const evs=[], enIdx=st.children.map((c,i)=>c.enabled?i:-1).filter(x=>x>=0);
+  const hRet=st.husband?.retireAge||60, wRet=st.wife?.retireAge||60;
+  const prev={};
+  rows.forEach((row,ri)=>{
+    if(ri===0){enIdx.forEach(ci=>{prev[ci]=pChildSimple(row.childCells?.[ci]||'');});return;}
+    // 親のマイルストーン
+    if(row.hAge===40) evs.push({year:row.year,icon:'🎂',text:'夫 40歳',sub:`妻${row.wAge}歳`,color:'#ede9fe'});
+    if(row.hAge===50) evs.push({year:row.year,icon:'🎂',text:'夫 50歳',sub:`妻${row.wAge}歳`,color:'#e0f2fe'});
+    if(row.hAge===hRet) evs.push({year:row.year,icon:'🏖️',text:'夫 定年退職',sub:'老後のスタート！',color:'#fce7f3'});
+    if(row.hAge===65)   evs.push({year:row.year,icon:'💰',text:'夫 年金開始',sub:`妻${row.wAge}歳`,color:'#dcfce7'});
+    if(row.wAge===wRet&&row.wAge!==row.hAge) evs.push({year:row.year,icon:'🏖️',text:'妻 定年退職',sub:'お疲れ様でした',color:'#fce7f3'});
+    if(row.wAge===65&&row.wAge!==row.hAge)   evs.push({year:row.year,icon:'💰',text:'妻 年金開始',sub:`夫${row.hAge}歳`,color:'#dcfce7'});
+    // 子のステージ変化
+    enIdx.forEach(ci=>{
+      const cell=row.childCells?.[ci]||'';
+      const stage=pChildSimple(cell), p=prev[ci];
+      if(stage!==p){
+        const nm=CN[ci], sub=`夫${row.hAge}歳・妻${row.wAge}歳`;
+        if(p==='unborn'&&stage==='preschool') evs.push({year:row.year,icon:'🍼',text:`${nm} 保育園入園`,sub,color:'#fef9c3'});
+        else if(stage==='elem')   evs.push({year:row.year,icon:'🏫',text:`${nm} 小学校入学`,sub,color:'#bbf7d0'});
+        else if(stage==='junior') evs.push({year:row.year,icon:'📚',text:`${nm} 中学入学`,sub,color:'#bfdbfe'});
+        else if(stage==='high')   evs.push({year:row.year,icon:'🎒',text:`${nm} 高校入学`,sub,color:'#ede9fe'});
+        else if(stage==='univ')   evs.push({year:row.year,icon:'🎓',text:`${nm} 大学入学`,sub,color:'#ffedd5'});
+        else if(stage==='grad')   evs.push({year:row.year,icon:'🎉',text:`${nm} 就職！`,sub:'社会人デビュー',color:'#e0f2fe'});
+        prev[ci]=stage;
+      }
+    });
+  });
+  return evs.sort((a,b)=>a.year-b.year);
+}
+
+/* Gantt (swimlane) 描画 */
+function drawSwimLane(host, rows, st){
+  if(!rows.length){host.innerHTML='';return;}
+  const CN=['長男','次男','三男','第4子'];
+  const hRet=st.husband?.retireAge||60, wRet=st.wife?.retireAge||60;
+  const enIdx=st.children.map((c,i)=>c.enabled?i:-1).filter(x=>x>=0);
+  const startY=rows[0].year, endY=rows[rows.length-1].year, span=endY-startY+1;
+
+  function buildSegs(stageFn){
+    const segs=[]; let cur=null, cs=startY;
+    rows.forEach(row=>{
+      const s=stageFn(row);
+      if(s!==cur){if(cur!==null)segs.push({stage:cur,start:cs,dur:row.year-cs}); cur=s; cs=row.year;}
+    });
+    if(cur) segs.push({stage:cur,start:cs,dur:endY-cs+1});
+    return segs;
+  }
+
+  const members=[
+    {name:'夫', segs:buildSegs(r=>pParentStage(r.hAge,hRet))},
+    {name:'妻', segs:buildSegs(r=>pParentStage(r.wAge,wRet))},
+    ...enIdx.map(ci=>({name:CN[ci], segs:buildSegs(r=>pChildDetailed(r.childCells?.[ci]||''))})),
+  ];
+
+  let html='';
+  members.forEach(m=>{
+    const bars=m.segs.map(seg=>{
+      const d=STAGE_DEF[seg.stage]||STAGE_DEF.unborn;
+      const pct=(seg.dur/span*100).toFixed(2);
+      const showLbl=pct>9;
+      return `<div class="swim-seg" style="flex:${seg.dur};background:${d.color};color:${d.text};" title="${d.label} ${seg.start}〜${seg.start+seg.dur-1}年 (${seg.dur}年間)">${showLbl?`<span class="seg-lbl">${d.icon}${pct>15?' '+d.label:''}</span>`:''}</div>`;
+    }).join('');
+    html+=`<div class="swim-row"><div class="swim-name">${m.name}</div><div class="swim-bars">${bars}</div></div>`;
+  });
+
+  // X軸（5年ごと）
+  const ticks=[];
+  for(let y=Math.ceil(startY/5)*5;y<=endY;y+=5){
+    const pct=((y-startY)/span*100).toFixed(1);
+    ticks.push(`<span class="swim-xtick" style="left:${pct}%;">${y}</span>`);
+  }
+  html+=`<div class="swim-xrow">${ticks.join('')}</div>`;
+  host.innerHTML=`<div class="swim-outer">${html}</div>`;
+}
+
+/* ファミリー年表タブ描画 */
+function renderFamilyTimeline(R, st){
+  const evs=calcFamilyEvents(R.rows, st);
+  const curY=new Date().getFullYear();
+
+  // イベントカード
+  const cards=evs.map(ev=>`
+    <div class="ev-card${ev.year===curY?' ec-now':''}" style="background:${ev.color};">
+      <div class="ec-yr">${ev.year}年</div>
+      <div class="ec-ico">${ev.icon}</div>
+      <div class="ec-txt">${ev.text}</div>
+      <div class="ec-sub">${ev.sub}</div>
+    </div>`).join('');
+  document.getElementById('evStripHost').innerHTML=
+    `<div class="ev-strip">${cards||'<div class="note">イベントは検出されませんでした。</div>'}</div>`;
+
+  // Swimlane
+  drawSwimLane(document.getElementById('swimHost'), R.rows, st);
+
+  // 凡例
+  const legendKeys=['work_p','retire','pension','nursery','pre35','elem','junior','high','univ','grad'];
+  document.getElementById('stageLegendHost').innerHTML=legendKeys.map(k=>{
+    const d=STAGE_DEF[k];
+    return `<span><i style="background:${d.color};"></i>${d.icon} ${d.label}</span>`;
+  }).join('');
+}
+
+/* =========================================================================
+   8. 結果描画
    ========================================================================= */
 function buildSparkline(rows){
   if(!rows||!rows.length) return '';
@@ -873,9 +1055,11 @@ function renderResults(R){
     ? `<div class="alert-banner danger"><div class="ab-icon">⚠️</div><div class="ab-body"><h3>${dep}年に資産が枯渇します</h3><p>収入・支出・積立・運用利回りの前提を見直してください。</p></div></div>`
     : `<div class="alert-banner safe"><div class="ab-icon">🎉</div><div class="ab-body"><h3>試算期間（${R.endYear}年）まで安全です</h3><p>引き続き資産はプラスを維持する見込みです。</p></div></div>`;
 
-  drawAssetChart(document.getElementById('assetChart'), R.rows);
+  const familyEvs=calcFamilyEvents(R.rows, state);
+  drawAssetChart(document.getElementById('assetChart'), R.rows, familyEvs);
   drawEduChart(document.getElementById('eduChart'), R.rows);
   renderCF(R); renderEdu(R); renderLoan(R);
+  renderFamilyTimeline(R, state);
 }
 
 function renderCF(R){
@@ -914,7 +1098,7 @@ function chartFrame(W,H,pad,xs,ymin,ymax){
 function yTicks(ymin,ymax,n){
   const ticks=[]; for(let i=0;i<=n;i++) ticks.push(ymin+(ymax-ymin)*i/n); return ticks;
 }
-function drawAssetChart(box, rows){
+function drawAssetChart(box, rows, events){
   const W=860,H=320,pad={l:62,r:16,t:16,b:30};
   const years=rows.map(r=>r.year), totals=rows.map(r=>r.total);
   const xs={min:Math.min(...years),max:Math.max(...years)};
@@ -940,6 +1124,17 @@ function drawAssetChart(box, rows){
   // Danger zone fill
   const danger=ymin<0?`<rect x="${pad.l}" y="${Y(0).toFixed(1)}" width="${W-pad.l-pad.r}" height="${(H-pad.b-Y(0)).toFixed(1)}" fill="rgba(254,226,226,0.35)"/>`:'';
 
+  // イベントマーカー（重要なもののみ 最大12件）
+  const markerEvs=(events||[]).filter(e=>
+    e.text.includes('小学校')||e.text.includes('定年')||e.text.includes('年金')||
+    e.text.includes('大学入学')||e.text.includes('就職')
+  ).slice(0,12);
+  const markers=markerEvs.filter(e=>e.year>=xs.min&&e.year<=xs.max).map(e=>{
+    const mx=X(e.year).toFixed(1);
+    return `<line x1="${mx}" y1="${pad.t+18}" x2="${mx}" y2="${(H-pad.b).toFixed(1)}" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3 2" opacity="0.55"/>
+    <text x="${mx}" y="${pad.t+14}" text-anchor="middle" font-size="13">${e.icon}</text>`;
+  }).join('');
+
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
     <defs>
       <linearGradient id="ag2" x1="0" y1="0" x2="0" y2="1">
@@ -953,7 +1148,7 @@ function drawAssetChart(box, rows){
       </linearGradient>
       <filter id="glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     </defs>
-    ${grid}${danger}${zero}
+    ${grid}${danger}${zero}${markers}
     <path d="${area}" fill="url(#ag2)"/>
     <path d="${invLine}" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.7"/>
     <path d="${line}" fill="none" stroke="url(#lineGrad)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
@@ -1028,14 +1223,14 @@ function switchTab(name){
 }
 function switchSub(name){
   document.querySelectorAll('.subtab').forEach(t=>t.classList.toggle('active', t.dataset.sub===name));
-  ['charts','cf','edu','loan'].forEach(s=>{ document.getElementById('sub-'+s).style.display = (s===name)?'block':'none'; });
+  ['family','charts','cf','edu','loan'].forEach(s=>{ document.getElementById('sub-'+s).style.display = (s===name)?'block':'none'; });
 }
 function runCalc(){
   syncAndSave(true);
   try{
     const R=simulate(state);
     renderResults(R);
-    switchTab('result'); switchSub('charts');
+    switchTab('result'); switchSub('family');
   }catch(e){ alert('計算エラー: '+e.message); console.error(e); }
 }
 
