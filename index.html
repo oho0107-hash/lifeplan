@@ -71,38 +71,69 @@
   .btn-go:active{transform:translateY(1px);}
   .btn-reset{background:#fff; border:1px solid var(--line); color:var(--sub);}
 
-  /* summary cards */
-  .sumgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px;}
-  .sum{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; box-shadow:var(--shadow);}
-  .sum .k{font-size:11px; color:var(--sub);}
-  .sum .v{font-size:18px; font-weight:800; margin-top:4px;}
-  .sum .v.neg{color:var(--warn);} .sum .v.pos{color:var(--good);}
-  .sum .u{font-size:11px; color:var(--sub); font-weight:500;}
+  /* ---- RESULT DASHBOARD ---- */
+  .result-hero{
+    background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 48%,#2563eb 100%);
+    border-radius:20px; padding:22px 22px 18px; color:#fff; margin:14px 0 10px;
+    position:relative; overflow:hidden;
+    box-shadow:0 8px 32px rgba(37,99,235,.30);
+  }
+  .result-hero::before{content:'';position:absolute;top:-70px;right:-60px;width:230px;height:230px;background:rgba(255,255,255,.06);border-radius:50%;}
+  .result-hero::after{content:'';position:absolute;bottom:-50px;left:25%;width:170px;height:170px;background:rgba(255,255,255,.04);border-radius:50%;}
+  .rh-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:relative;z-index:1;}
+  .rh-badge{font-size:12px;font-weight:700;border-radius:999px;padding:4px 14px;display:inline-flex;align-items:center;gap:5px;}
+  .rh-badge.safe{background:rgba(74,222,128,.2);color:#4ade80;border:1px solid rgba(74,222,128,.35);}
+  .rh-badge.danger{background:rgba(248,113,113,.2);color:#fca5a5;border:1px solid rgba(248,113,113,.35);}
+  .rh-year{font-size:11px;opacity:.5;position:relative;z-index:1;}
+  .rh-main{position:relative;z-index:1;margin-top:14px;}
+  .rh-label{font-size:11px;opacity:.65;letter-spacing:.06em;text-transform:uppercase;}
+  .rh-value{font-size:52px;font-weight:900;letter-spacing:-2px;line-height:1.05;margin-top:2px;display:flex;align-items:baseline;gap:4px;}
+  .rh-value .rv-currency{font-size:22px;opacity:.75;font-weight:700;}
+  .rh-value .rv-unit{font-size:18px;opacity:.75;font-weight:600;margin-left:2px;}
+  .rh-spark{margin-top:14px;height:48px;position:relative;z-index:1;}
+  .rh-spark svg{display:block;width:100%;height:100%;}
 
-  .alert{background:var(--warnbg); border:1px solid #fecaca; color:#991b1b; border-radius:10px; padding:12px 14px; margin:12px 0; font-size:13px;}
-  .ok{background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; border-radius:10px; padding:10px 14px; margin:12px 0; font-size:13px;}
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px;margin:0 0 14px;}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+  .kpi::after{content:attr(data-icon);position:absolute;right:8px;top:6px;font-size:26px;opacity:.12;pointer-events:none;}
+  .kpi .kk{font-size:11px;color:var(--sub);margin-bottom:5px;}
+  .kpi .kv{font-size:24px;font-weight:900;letter-spacing:-.5px;display:flex;align-items:baseline;gap:2px;}
+  .kpi .ku{font-size:11px;color:var(--sub);font-weight:500;}
+  .kpi .kv.neg{color:var(--warn);}
+  .kpi .kv.pos{color:var(--good);}
+  .kpi.hi{background:linear-gradient(135deg,#eff6ff,#dbeafe);border-color:#bfdbfe;}
+  .kpi.warn-bg{background:linear-gradient(135deg,#fff7ed,#ffedd5);border-color:#fed7aa;}
+
+  .alert-banner{border-radius:14px;padding:14px 16px;margin:0 0 14px;display:flex;align-items:flex-start;gap:12px;font-size:13px;line-height:1.5;}
+  .alert-banner.danger{background:linear-gradient(135deg,#fff1f2,#ffe4e6);border:1px solid #fecaca;color:#9f1239;}
+  .alert-banner.safe{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #a7f3d0;color:#064e3b;}
+  .alert-banner .ab-icon{font-size:30px;flex-shrink:0;line-height:1.1;}
+  .alert-banner .ab-body h3{margin:0 0 2px;font-size:14px;font-weight:800;}
+  .alert-banner .ab-body p{margin:0;font-size:12px;opacity:.85;}
 
   /* tables */
-  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; -webkit-overflow-scrolling:touch;}
+  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:12px; -webkit-overflow-scrolling:touch; box-shadow:var(--shadow);}
   table{border-collapse:collapse; width:100%; font-size:12px; white-space:nowrap;}
-  th,td{padding:6px 9px; border-bottom:1px solid var(--line); text-align:right;}
-  th{background:#f8fafc; color:var(--sub); font-weight:600; position:sticky; top:0;}
+  th,td{padding:7px 10px; border-bottom:1px solid var(--line); text-align:right;}
+  th{background:linear-gradient(180deg,#f8fafc,#f1f5f9); color:var(--sub); font-weight:700; position:sticky; top:0; font-size:11px; letter-spacing:.02em;}
   td.lbl,th.lbl{text-align:center;}
   tbody tr:nth-child(even){background:#fbfdff;}
-  .sticky-col{position:sticky; left:0; background:#fff; z-index:2; text-align:center; font-weight:700; box-shadow:1px 0 0 var(--line);}
+  tbody tr:hover{background:#eff6ff !important;}
+  .sticky-col{position:sticky; left:0; background:#fff; z-index:2; text-align:center; font-weight:700; box-shadow:2px 0 4px rgba(0,0,0,.04);}
   tbody tr:nth-child(even) .sticky-col{background:#fbfdff;}
-  th.sticky-col{background:#f8fafc; z-index:5;}
+  th.sticky-col{background:#f1f5f9; z-index:5;}
   tr.depleted td{background:#fff1f2 !important;}
   .neg{color:var(--warn);}
 
   /* charts */
   .chartbox{position:relative;}
   .chartbox svg{display:block; width:100%; height:auto;}
-  .chart-title{font-size:13px; font-weight:700; margin:4px 2px 8px;}
-  .tip{position:absolute; pointer-events:none; background:var(--ink); color:#fff; font-size:11px; padding:6px 8px; border-radius:6px; transform:translate(-50%,-115%); white-space:nowrap; opacity:0; transition:opacity .08s; z-index:5;}
+  .chart-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .chart-title{font-size:14px; font-weight:800; color:var(--ink);}
+  .tip{position:absolute; pointer-events:none; background:rgba(15,23,42,.92); color:#fff; font-size:11px; padding:7px 10px; border-radius:8px; transform:translate(-50%,-115%); white-space:nowrap; opacity:0; transition:opacity .08s; z-index:5; box-shadow:0 4px 12px rgba(0,0,0,.2);}
   .tip b{font-weight:700;}
-  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:var(--sub); margin:6px 2px;}
-  .legend i{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:5px; vertical-align:-1px;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:var(--sub);}
+  .legend i{display:inline-block; width:12px; height:4px; border-radius:999px; margin-right:5px; vertical-align:middle;}
 
   .note{font-size:11px; color:var(--sub); margin-top:8px;}
   .locked-input{background:#f0f9ff !important; color:#0369a1 !important; border-color:#bae6fd !important; cursor:not-allowed;}
@@ -180,12 +211,19 @@
 
     <div id="sub-charts" class="subview">
       <div class="card">
-        <div class="chart-title">合計資産の推移</div>
-        <div class="legend"><span><i style="background:#2563eb"></i>合計資産</span><span><i style="background:#94a3b8"></i>うち投資残高</span></div>
+        <div class="chart-header">
+          <div class="chart-title">📈 合計資産の推移</div>
+          <div class="legend">
+            <span><i style="background:#2563eb;height:3px;display:inline-block;width:16px;border-radius:999px;vertical-align:middle;margin-right:4px;"></i>合計資産</span>
+            <span><i style="background:#94a3b8;height:2px;display:inline-block;width:14px;border-radius:999px;vertical-align:middle;margin-right:4px;border-top:2px dashed #94a3b8;background:none;"></i>投資残高</span>
+          </div>
+        </div>
         <div class="chartbox" id="assetChart"></div>
       </div>
       <div class="card">
-        <div class="chart-title">年次教育費</div>
+        <div class="chart-header">
+          <div class="chart-title">🎓 年次教育費</div>
+        </div>
         <div class="chartbox" id="eduChart"></div>
       </div>
     </div>
@@ -753,25 +791,90 @@ function syncAndSave(immediate){ readFormToState(); persist(immediate===true); }
 /* =========================================================================
    7. 結果描画
    ========================================================================= */
+function buildSparkline(rows){
+  if(!rows||!rows.length) return '';
+  const totals=rows.map(r=>r.total);
+  const ymin=Math.min(0,...totals), ymax=Math.max(1,...totals);
+  const W=800,H=48;
+  const X=i=>i/(rows.length-1||1)*W;
+  const Y=v=>H-(v-ymin)/((ymax-ymin)||1)*H;
+  const pts=rows.map((r,i)=>`${X(i).toFixed(1)},${Y(r.total).toFixed(1)}`).join(' ');
+  const safe=totals[totals.length-1]>0;
+  const lc=safe?'#4ade80':'#f87171';
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs><linearGradient id="spkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${lc}" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="${lc}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <polygon points="0,${H} ${pts} ${W},${H}" fill="url(#spkGrad)"/>
+    <polyline points="${pts}" fill="none" stroke="${lc}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+function countUp(el, target, unit, duration){
+  const start=Date.now(); const from=0;
+  const sign=target<0?-1:1; const abs=Math.abs(target);
+  function tick(){
+    const elapsed=Date.now()-start;
+    const progress=Math.min(elapsed/duration,1);
+    const ease=1-Math.pow(1-progress,3);
+    const val=Math.round(from+sign*abs*ease);
+    el.textContent=val.toLocaleString('ja-JP')+unit;
+    if(progress<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
 function renderResults(R){
-  // サマリ
   const dep=R.summary.depleteYear;
-  document.getElementById('summaryHost').innerHTML=`<div class="sumgrid">
-    <div class="sum"><div class="k">最終資産（${R.endYear}年）</div><div class="v ${R.summary.finalTotal<=0?'neg':'pos'}">${fmt(R.summary.finalTotal)}<span class="u"> 円</span></div></div>
-    <div class="sum"><div class="k">資産ピーク</div><div class="v">${man(R.summary.peakTotal)}<span class="u"> 万円</span></div></div>
-    <div class="sum"><div class="k">資産の最小値</div><div class="v ${R.summary.minTotal<=0?'neg':''}">${man(R.summary.minTotal)}<span class="u"> 万円</span></div></div>
-    <div class="sum"><div class="k">生涯教育費（試算期間）</div><div class="v">${man(R.summary.eduLifetime)}<span class="u"> 万円</span></div></div>
-    <div class="sum"><div class="k">資産が枯渇する年</div><div class="v ${dep?'neg':'pos'}">${dep?dep+'年':'なし'}</div></div>
-  </div>`;
-  document.getElementById('alertHost').innerHTML = dep
-    ? `<div class="alert">⚠️ <b>${dep}年</b>に合計資産が0（枯渇）になります。収入・支出・積立・運用利回りの前提を見直してください。</div>`
-    : `<div class="ok">✅ 試算期間（${R.endYear}年）まで合計資産はプラスを維持します。</div>`;
+  const safe=!dep;
+  const finalM=Math.round(R.summary.finalTotal/10000);
+  const peakM=Math.round(R.summary.peakTotal/10000);
+  const minM=Math.round(R.summary.minTotal/10000);
+  const eduM=Math.round(R.summary.eduLifetime/10000);
 
-  // グラフ
+  // ヒーローカード
+  document.getElementById('summaryHost').innerHTML=`
+    <div class="result-hero">
+      <div class="rh-top">
+        <span class="rh-badge ${safe?'safe':'danger'}">${safe?'✅ 老後も安心':'⚠️ 資産枯渇リスク'}</span>
+        <span class="rh-year">試算 ${new Date().getFullYear()}年版</span>
+      </div>
+      <div class="rh-main">
+        <div class="rh-label">夫90歳時点の総資産（${R.endYear}年）</div>
+        <div class="rh-value"><span class="rv-currency">¥</span><span id="heroNum">…</span><span class="rv-unit">万円</span></div>
+      </div>
+      <div class="rh-spark">${buildSparkline(R.rows)}</div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi hi" data-icon="🏔️">
+        <div class="kk">資産ピーク</div>
+        <div class="kv neutral"><span id="kv-peak">…</span><span class="ku"> 万円</span></div>
+      </div>
+      <div class="kpi ${minM<0?'warn-bg':''}" data-icon="${minM<0?'📉':'💰'}">
+        <div class="kk">資産の最小値</div>
+        <div class="kv ${minM<0?'neg':'neutral'}"><span id="kv-min">…</span><span class="ku"> 万円</span></div>
+      </div>
+      <div class="kpi" data-icon="🎓">
+        <div class="kk">生涯教育費</div>
+        <div class="kv neutral"><span id="kv-edu">…</span><span class="ku"> 万円</span></div>
+      </div>
+      <div class="kpi ${dep?'warn-bg':''}" data-icon="${dep?'⚠️':'🛡️'}">
+        <div class="kk">資産枯渇</div>
+        <div class="kv ${dep?'neg':'pos'}" id="kv-dep">${dep?dep+'年':'なし'}</div>
+      </div>
+    </div>`;
+  // カウントアップアニメーション
+  countUp(document.getElementById('heroNum'), finalM, '', 900);
+  countUp(document.getElementById('kv-peak'), peakM, '', 700);
+  countUp(document.getElementById('kv-min'), minM, '', 700);
+  countUp(document.getElementById('kv-edu'), eduM, '', 700);
+
+  // バナー
+  document.getElementById('alertHost').innerHTML = dep
+    ? `<div class="alert-banner danger"><div class="ab-icon">⚠️</div><div class="ab-body"><h3>${dep}年に資産が枯渇します</h3><p>収入・支出・積立・運用利回りの前提を見直してください。</p></div></div>`
+    : `<div class="alert-banner safe"><div class="ab-icon">🎉</div><div class="ab-body"><h3>試算期間（${R.endYear}年）まで安全です</h3><p>引き続き資産はプラスを維持する見込みです。</p></div></div>`;
+
   drawAssetChart(document.getElementById('assetChart'), R.rows);
   drawEduChart(document.getElementById('eduChart'), R.rows);
-
-  // テーブル
   renderCF(R); renderEdu(R); renderLoan(R);
 }
 
@@ -812,47 +915,87 @@ function yTicks(ymin,ymax,n){
   const ticks=[]; for(let i=0;i<=n;i++) ticks.push(ymin+(ymax-ymin)*i/n); return ticks;
 }
 function drawAssetChart(box, rows){
-  const W=860,H=300,pad={l:56,r:14,t:12,b:26};
-  const years=rows.map(r=>r.year), totals=rows.map(r=>r.total), invs=rows.map(r=>r.invest);
+  const W=860,H=320,pad={l:62,r:16,t:16,b:30};
+  const years=rows.map(r=>r.year), totals=rows.map(r=>r.total);
   const xs={min:Math.min(...years),max:Math.max(...years)};
-  const ymax=Math.max(1,...totals)*1.08, ymin=Math.min(0,...totals);
+  const rawMax=Math.max(1,...totals), rawMin=Math.min(0,...totals);
+  const ymax=rawMax*1.1, ymin=rawMin<0?rawMin*1.1:rawMin;
   const {X,Y}=chartFrame(W,H,pad,xs,ymin,ymax);
-  const area=`M ${X(years[0])} ${Y(0)} `+rows.map(r=>`L ${X(r.year).toFixed(1)} ${Y(r.total).toFixed(1)}`).join(' ')+` L ${X(years[years.length-1])} ${Y(0)} Z`;
+  // Area fill (total)
+  const area=`M ${X(years[0]).toFixed(1)} ${Y(0).toFixed(1)} `+rows.map(r=>`L ${X(r.year).toFixed(1)} ${Y(r.total).toFixed(1)}`).join(' ')+` L ${X(years[years.length-1]).toFixed(1)} ${Y(0).toFixed(1)} Z`;
+  // Lines
   const line=rows.map((r,i)=>`${i?'L':'M'} ${X(r.year).toFixed(1)} ${Y(r.total).toFixed(1)}`).join(' ');
   const invLine=rows.map((r,i)=>`${i?'L':'M'} ${X(r.year).toFixed(1)} ${Y(r.invest).toFixed(1)}`).join(' ');
-  const yt=yTicks(ymin,ymax,4);
-  const grid=yt.map(v=>`<line x1="${pad.l}" y1="${Y(v).toFixed(1)}" x2="${W-pad.r}" y2="${Y(v).toFixed(1)}" stroke="#eef2f7"/><text x="${pad.l-6}" y="${(Y(v)+3).toFixed(1)}" text-anchor="end" font-size="10" fill="#94a3b8">${man(v)}万</text>`).join('');
-  const xstep=Math.ceil(years.length/8);
+  // Grid
+  const yt=yTicks(ymin,ymax,5);
+  const grid=yt.map(v=>{
+    const yi=Y(v).toFixed(1);
+    return `<line x1="${pad.l}" y1="${yi}" x2="${W-pad.r}" y2="${yi}" stroke="#f1f5f9" stroke-width="${v===0?'0':'1'}"/>
+    <text x="${pad.l-8}" y="${(Y(v)+4).toFixed(1)}" text-anchor="end" font-size="10" fill="${v===0?'#64748b':'#94a3b8'}" font-weight="${v===0?'600':'400'}">${man(v)}万</text>`;
+  }).join('');
+  const xstep=Math.ceil(years.length/10);
   const xlab=years.filter((y,i)=>i%xstep===0||i===years.length-1).map(y=>`<text x="${X(y).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#94a3b8">${y}</text>`).join('');
-  const zero=ymin<0?`<line x1="${pad.l}" y1="${Y(0).toFixed(1)}" x2="${W-pad.r}" y2="${Y(0).toFixed(1)}" stroke="#fca5a5" stroke-dasharray="3 3"/>`:'';
+  // Zero line (prominent)
+  const zero=`<line x1="${pad.l}" y1="${Y(0).toFixed(1)}" x2="${W-pad.r}" y2="${Y(0).toFixed(1)}" stroke="${ymin<0?'#f87171':'#cbd5e1'}" stroke-width="${ymin<0?'1.5':'0.8'}" stroke-dasharray="${ymin<0?'4 3':''}"/>`;
+  // Danger zone fill
+  const danger=ymin<0?`<rect x="${pad.l}" y="${Y(0).toFixed(1)}" width="${W-pad.l-pad.r}" height="${(H-pad.b-Y(0)).toFixed(1)}" fill="rgba(254,226,226,0.35)"/>`:'';
+
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-    <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2563eb" stop-opacity="0.28"/><stop offset="1" stop-color="#2563eb" stop-opacity="0.02"/></linearGradient></defs>
-    ${grid}${zero}<path d="${area}" fill="url(#ag)"/><path d="${invLine}" fill="none" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="4 3"/><path d="${line}" fill="none" stroke="#2563eb" stroke-width="2.2"/>
-    <line id="ac-vline" x1="0" y1="${pad.t}" x2="0" y2="${H-pad.b}" stroke="#2563eb" stroke-width="1" opacity="0"/>
-    <circle id="ac-dot" r="3.5" fill="#2563eb" opacity="0"/>
-    <rect x="${pad.l}" y="${pad.t}" width="${W-pad.l-pad.r}" height="${H-pad.t-pad.b}" fill="transparent" id="ac-hit"/></svg>
-    ${xlab?'':''}<div class="tip" id="ac-tip"></div>`;
-  // re-add x labels into svg (they were outside)
-  const svg=box.querySelector('svg'); svg.insertAdjacentHTML('beforeend', xlab);
-  attachHover(box, rows, X, Y, 'ac', r=>`${r.year}年　合計 <b>${fmt(r.total)}</b>円<br>投資 ${fmt(r.invest)} / 現金 ${fmt(r.cash)}`);
+    <defs>
+      <linearGradient id="ag2" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#2563eb" stop-opacity="0.35"/>
+        <stop offset="0.7" stop-color="#7c3aed" stop-opacity="0.08"/>
+        <stop offset="1" stop-color="#2563eb" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#2563eb"/>
+        <stop offset="1" stop-color="#7c3aed"/>
+      </linearGradient>
+      <filter id="glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    ${grid}${danger}${zero}
+    <path d="${area}" fill="url(#ag2)"/>
+    <path d="${invLine}" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.7"/>
+    <path d="${line}" fill="none" stroke="url(#lineGrad)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+    ${xlab}
+    <line id="ac-vline" x1="0" y1="${pad.t}" x2="0" y2="${H-pad.b}" stroke="#6366f1" stroke-width="1" stroke-dasharray="3 2" opacity="0"/>
+    <circle id="ac-dot" r="4.5" fill="#fff" stroke="#2563eb" stroke-width="2.5" opacity="0"/>
+    <rect x="${pad.l}" y="${pad.t}" width="${W-pad.l-pad.r}" height="${H-pad.t-pad.b}" fill="transparent" id="ac-hit"/>
+  </svg><div class="tip" id="ac-tip"></div>`;
+  attachHover(box, rows, X, Y, 'ac', r=>`${r.year}年 &nbsp;合計 <b>${fmt(r.total)}</b>円<br>投資 ${fmt(r.invest)} ／ 現金 ${fmt(r.cash)}`);
 }
 function drawEduChart(box, rows){
   const data=rows.filter(r=>r.edu>0);
-  if(!data.length){ box.innerHTML='<div class="note">教育費の発生年はありません。</div>'; return; }
-  const W=860,H=260,pad={l:56,r:14,t:12,b:26};
+  if(!data.length){ box.innerHTML='<div class="note" style="padding:20px 0;text-align:center;">教育費の発生年はありません。</div>'; return; }
+  const W=860,H=280,pad={l:62,r:16,t:24,b:30};
   const years=data.map(r=>r.year); const xs={min:Math.min(...years),max:Math.max(...years)};
-  const ymax=Math.max(1,...data.map(r=>r.edu))*1.08;
+  const ymax=Math.max(1,...data.map(r=>r.edu))*1.18;
   const {X,Y}=chartFrame(W,H,pad,xs,0,ymax);
-  const bw=Math.max(3,(W-pad.l-pad.r)/data.length*0.7);
-  const bars=data.map(r=>{ const x=X(r.year)-bw/2, y=Y(r.edu); return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${(Y(0)-y).toFixed(1)}" rx="2" fill="#f59e0b" opacity="0.85"/>`; }).join('');
+  const bw=Math.max(4,(W-pad.l-pad.r)/data.length*0.65);
+  const bars=data.map(r=>{
+    const bx=(X(r.year)-bw/2).toFixed(1), by=Y(r.edu).toFixed(1);
+    const bh=(Y(0)-Y(r.edu)).toFixed(1);
+    // value label on top of bar (only if bar is wide enough)
+    const label=bw>18?`<text x="${X(r.year).toFixed(1)}" y="${(Y(r.edu)-4).toFixed(1)}" text-anchor="middle" font-size="9" fill="#92400e" font-weight="600">${man(r.edu)}万</text>`:'';
+    return `<rect x="${bx}" y="${by}" width="${bw.toFixed(1)}" height="${bh}" rx="3" fill="url(#eduGrad)"/>${label}`;
+  }).join('');
   const yt=yTicks(0,ymax,4);
-  const grid=yt.map(v=>`<line x1="${pad.l}" y1="${Y(v).toFixed(1)}" x2="${W-pad.r}" y2="${Y(v).toFixed(1)}" stroke="#eef2f7"/><text x="${pad.l-6}" y="${(Y(v)+3).toFixed(1)}" text-anchor="end" font-size="10" fill="#94a3b8">${man(v)}万</text>`).join('');
-  const xstep=Math.ceil(data.length/8);
+  const grid=yt.filter(v=>v>0).map(v=>`<line x1="${pad.l}" y1="${Y(v).toFixed(1)}" x2="${W-pad.r}" y2="${Y(v).toFixed(1)}" stroke="#f1f5f9"/><text x="${pad.l-8}" y="${(Y(v)+4).toFixed(1)}" text-anchor="end" font-size="10" fill="#94a3b8">${man(v)}万</text>`).join('');
+  const xstep=Math.ceil(data.length/10);
   const xlab=data.filter((r,i)=>i%xstep===0||i===data.length-1).map(r=>`<text x="${X(r.year).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#94a3b8">${r.year}</text>`).join('');
-  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${grid}${bars}${xlab}
-    <line id="ed-vline" x1="0" y1="${pad.t}" x2="0" y2="${H-pad.b}" stroke="#b45309" stroke-width="1" opacity="0"/>
-    <rect x="${pad.l}" y="${pad.t}" width="${W-pad.l-pad.r}" height="${H-pad.t-pad.b}" fill="transparent" id="ed-hit"/></svg><div class="tip" id="ed-tip"></div>`;
-  attachHover(box, data, X, Y, 'ed', r=>`${r.year}年　教育費 <b>${fmt(r.edu)}</b>円`);
+  const baseline=`<line x1="${pad.l}" y1="${Y(0).toFixed(1)}" x2="${W-pad.r}" y2="${Y(0).toFixed(1)}" stroke="#e2e8f0" stroke-width="1.5"/>`;
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="eduGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f59e0b" stop-opacity="1"/>
+        <stop offset="1" stop-color="#ef4444" stop-opacity="0.7"/>
+      </linearGradient>
+    </defs>
+    ${grid}${baseline}${bars}${xlab}
+    <line id="ed-vline" x1="0" y1="${pad.t}" x2="0" y2="${H-pad.b}" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3 2" opacity="0"/>
+    <rect x="${pad.l}" y="${pad.t}" width="${W-pad.l-pad.r}" height="${H-pad.t-pad.b}" fill="transparent" id="ed-hit"/>
+  </svg><div class="tip" id="ed-tip"></div>`;
+  attachHover(box, data, X, Y, 'ed', r=>`${r.year}年 &nbsp;教育費 <b>${fmt(r.edu)}</b>円`);
 }
 function attachHover(box, data, X, Y, id, tipFn){
   const svg=box.querySelector('svg'); const hit=svg.querySelector('#'+id+'-hit');
