@@ -165,6 +165,25 @@
   .stage-legend span{display:inline-flex;align-items:center;gap:4px;}
   .stage-legend i{width:12px;height:12px;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.08);}
 
+  /* ---- POP CF TABLE ---- */
+  .cf-person{text-align:center;padding:5px 6px;vertical-align:middle;min-width:54px;}
+  .cf-person .cp-emo{font-size:17px;line-height:1.1;display:block;}
+  .cf-person .cp-age{font-size:11px;font-weight:800;display:block;margin-top:1px;}
+  .cf-person .cp-st{font-size:9px;font-weight:700;border-radius:5px;padding:1px 5px;display:inline-block;margin-top:2px;}
+  .cf-child{text-align:center;padding:4px 5px;vertical-align:middle;min-width:60px;}
+  .cf-child .cc-emo{font-size:15px;line-height:1.2;display:block;}
+  .cf-child .cc-age{font-size:10px;font-weight:800;display:block;margin-top:1px;}
+  .cf-child .cc-grade{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:800;border-radius:6px;padding:2px 6px;margin-top:2px;}
+  .ev-col{min-width:80px;max-width:160px;padding:3px 6px !important;vertical-align:middle;}
+  .ev-tag{display:block;font-size:10px;font-weight:700;border-radius:999px;padding:2px 8px;margin:1px 0;white-space:nowrap;line-height:1.5;}
+  tr.era-edu td{background:linear-gradient(90deg,rgba(254,243,199,.55),transparent) !important;}
+  tr.era-edu .sticky-col{background:#fffbeb !important;}
+  tr.era-old td{background:linear-gradient(90deg,rgba(209,250,229,.5),transparent) !important;}
+  tr.era-old .sticky-col{background:#f0fdf4 !important;}
+  tr.row-ev .sticky-col{border-left:3px solid #f59e0b;padding-left:6px;}
+  .cf-yr{font-weight:900;font-size:12px;}
+  tr.cur-year .sticky-col{border-left:3px solid #2563eb;color:#2563eb;}
+
   @media (max-width:520px){
     .wrap{padding:8px;}
     .grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}
@@ -601,7 +620,7 @@ function simulate(s){
 
   return {
     startYear,endYear,rows,loanRows,
-    enabled:enabled.map((c,i)=>({i,label:'子'+(i+1)})),
+    enabled:enabled.map((c,i)=>({i,label:['長男','次男','三男','第4子'][i]||('子'+(i+1))})),
     summary:{ finalTotal:rows[rows.length-1].total, peakTotal, minTotal, eduLifetime, depleteYear }
   };
 }
@@ -1062,14 +1081,109 @@ function renderResults(R){
   renderFamilyTimeline(R, state);
 }
 
+/* ---- CF pop helpers ---- */
+function cfChildStage(cell){
+  if(!cell||cell==='—') return 'unborn';
+  const m=cell.match(/\(([^)]+)\)/); if(!m) return 'unborn';
+  const g=m[1];
+  if(g==='幼保') return 'preschool';
+  if(g.startsWith('小')) return 'elem';
+  if(g.startsWith('中')) return 'junior';
+  if(g.startsWith('高')) return 'high';
+  if(g.startsWith('大')) return 'univ';
+  return 'grad';
+}
+function cfPersonCell(age, gender, retireAge){
+  const emo = gender==='m'
+    ? (age<40?'👨':age<55?'👨':age<65?'🧓':'👴')
+    : (age<40?'👩':age<55?'👩':age<65?'🧓':'👵');
+  let st='', stStyle='';
+  if(age>=65){          st='💰年金'; stStyle='background:#d1fae5;color:#065f46;'; }
+  else if(age>=retireAge){st='🏖️定年後'; stStyle='background:#fce7f3;color:#9d174d;'; }
+  else {                st='💼';      stStyle='background:#dbeafe;color:#1e3a8a;'; }
+  return `<td class="cf-person"><span class="cp-emo">${emo}</span><span class="cp-age">${age}歳</span><span class="cp-st" style="${stStyle}">${st}</span></td>`;
+}
+function cfChildCell(cell){
+  if(!cell||cell==='—') return `<td class="cf-child"><span class="cc-emo" style="opacity:.3;">—</span></td>`;
+  const am=cell.match(/^(\d+)歳/), gm=cell.match(/\(([^)]+)\)/);
+  if(!am||!gm) return `<td class="cf-child">${cell}</td>`;
+  const ageN=parseInt(am[1]), grade=gm[1];
+  // child emoji by age
+  const emo = ageN<3?'👶':ageN<7?'🧒':ageN<13?'👦':ageN<19?'🧑':ageN<23?'🧑‍🎓':'💼';
+  // grade badge colors
+  let bc,tc,gico;
+  if(grade==='幼保'&&ageN<=2){bc='#fce7f3';tc='#9d174d';gico='👶';}
+  else if(grade==='幼保')     {bc='#fef9c3';tc='#854d0e';gico='🌸';}
+  else if(grade.startsWith('小')){bc='#bbf7d0';tc='#065f46';gico='🏫';}
+  else if(grade.startsWith('中')){bc='#bfdbfe';tc='#1e40af';gico='📚';}
+  else if(grade.startsWith('高')){bc='#ede9fe';tc='#5b21b6';gico='🎒';}
+  else if(grade.startsWith('大')){bc='#ffedd5';tc='#c2410c';gico='🎓';}
+  else                           {bc='#e0f2fe';tc='#0c4a6e';gico='💼';}
+  // exam year hint (受験前の星マーク)
+  const exam=(grade==='小6'||grade==='中3'||grade==='高3')?'✏️':'';
+  return `<td class="cf-child"><span class="cc-emo">${emo}</span><span class="cc-age">${ageN}歳</span><span class="cc-grade" style="background:${bc};color:${tc};">${gico}${grade}${exam}</span></td>`;
+}
+function cfRowEvents(rows, enabled, hRet, wRet){
+  const result=rows.map(()=>[]);
+  const EV={
+    elem:  {icon:'🏫',label:'小学校入学',bg:'#bbf7d0',tc:'#065f46'},
+    junior:{icon:'📚',label:'中学入学',  bg:'#bfdbfe',tc:'#1e40af'},
+    high:  {icon:'🎒',label:'高校入学',  bg:'#ede9fe',tc:'#5b21b6'},
+    univ:  {icon:'🎓',label:'大学入学',  bg:'#ffedd5',tc:'#c2410c'},
+    grad:  {icon:'🎉',label:'就職！',    bg:'#e0f2fe',tc:'#0c4a6e'},
+    preschool:{icon:'🍼',label:'保育入園',bg:'#fef9c3',tc:'#854d0e'},
+  };
+  rows.forEach((row,ri)=>{
+    if(!ri) return;
+    const prev=rows[ri-1];
+    if(row.hAge===hRet)               result[ri].push({icon:'🏖️',label:'夫 定年退職',bg:'#fce7f3',tc:'#9d174d'});
+    if(row.hAge===65)                 result[ri].push({icon:'💰',label:'夫 年金開始',bg:'#d1fae5',tc:'#065f46'});
+    if(row.wAge===wRet&&row.wAge!==row.hAge) result[ri].push({icon:'🏖️',label:'妻 定年退職',bg:'#fce7f3',tc:'#9d174d'});
+    if(row.wAge===65&&row.wAge!==row.hAge)   result[ri].push({icon:'💰',label:'妻 年金開始',bg:'#d1fae5',tc:'#065f46'});
+    enabled.forEach((child,ci)=>{
+      const cs=cfChildStage(row.childCells[ci]), ps=cfChildStage(prev.childCells[ci]);
+      if(cs!==ps && EV[cs]){
+        const e=EV[cs];
+        result[ri].push({icon:e.icon, label:child.label+' '+e.label, bg:e.bg, tc:e.tc});
+      }
+    });
+  });
+  return result;
+}
+
 function renderCF(R){
+  const hRet=state.husband?.retireAge||60, wRet=state.wife?.retireAge||60;
+  const rowEvts=cfRowEvents(R.rows, R.enabled, hRet, wRet);
+  const curYear=new Date().getFullYear();
   const childCols=R.enabled.map(c=>`<th>${c.label}</th>`).join('');
-  const head=`<tr><th class="sticky-col">年</th><th>夫</th><th>妻</th>${childCols}<th>収入</th><th>教育</th><th>生活</th><th>住宅</th><th>車</th><th>旅行</th><th>医療</th><th>支出計</th><th>投資残高</th><th>現金</th><th>合計資産</th></tr>`;
-  const body=R.rows.map(r=>{
-    const cells=r.childCells.map(c=>`<td class="lbl">${c}</td>`).join('');
-    return `<tr class="${r.total<=0?'depleted':''}"><td class="sticky-col">${r.year}</td><td>${r.hAge}</td><td>${r.wAge}</td>${cells}`+
-      `<td>${fmt(r.income)}</td><td>${fmt(r.edu)}</td><td>${fmt(r.living)}</td><td>${fmt(r.housing)}</td><td>${fmt(r.car)}</td><td>${fmt(r.travel)}</td><td>${fmt(r.medical)}</td>`+
-      `<td>${fmt(r.expense)}</td><td>${fmt(r.invest)}</td><td class="${r.cash<=0?'neg':''}">${fmt(r.cash)}</td><td class="${r.total<=0?'neg':''}"><b>${fmt(r.total)}</b></td></tr>`;
+  const head=`<tr>
+    <th class="sticky-col" style="min-width:44px;">年</th>
+    <th class="ev-col">🎊 イベント</th>
+    <th>夫</th><th>妻</th>${childCols}
+    <th>収入</th><th>教育</th><th>生活</th><th>住宅</th><th>車</th><th>旅行</th><th>医療</th>
+    <th>支出計</th><th>投資残高</th><th>現金</th><th>合計資産</th>
+  </tr>`;
+  const body=R.rows.map((r,ri)=>{
+    const evts=rowEvts[ri];
+    const evHtml=evts.map(e=>`<span class="ev-tag" style="background:${e.bg};color:${e.tc};">${e.icon} ${e.label}</span>`).join('');
+    const hasEv=evts.length>0;
+    const isCur=r.year===curYear;
+    // era
+    let era='';
+    if(r.hAge>=60) era='era-old';
+    else if(r.edu>0) era='era-edu';
+    // child cells
+    const childCellsHtml=r.childCells.map(c=>cfChildCell(c)).join('');
+    return `<tr class="${r.total<=0?'depleted':''} ${era} ${isCur?'cur-year':''} ${hasEv?'row-ev':''}">
+      <td class="sticky-col"><span class="cf-yr">${r.year}</span></td>
+      <td class="ev-col">${evHtml}</td>
+      ${cfPersonCell(r.hAge,'m',hRet)}${cfPersonCell(r.wAge,'f',wRet)}
+      ${childCellsHtml}
+      <td>${fmt(r.income)}</td><td>${fmt(r.edu)}</td><td>${fmt(r.living)}</td><td>${fmt(r.housing)}</td><td>${fmt(r.car)}</td><td>${fmt(r.travel)}</td><td>${fmt(r.medical)}</td>
+      <td>${fmt(r.expense)}</td><td>${fmt(r.invest)}</td>
+      <td class="${r.cash<=0?'neg':''}">${fmt(r.cash)}</td>
+      <td class="${r.total<=0?'neg':''}"><b>${fmt(r.total)}</b></td>
+    </tr>`;
   }).join('');
   document.getElementById('cfTable').innerHTML=`<table>${head}${body}</table>`;
 }
